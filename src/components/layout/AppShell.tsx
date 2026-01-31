@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -11,11 +11,22 @@ import {
   X,
   Search,
   Bell,
-  User
+  User,
+  LogOut,
+  Upload
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { mockUser } from '@/data/mockData';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 
 interface NavItem {
   path: string;
@@ -27,6 +38,7 @@ const navItems: NavItem[] = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/inventory', label: 'Inventory', icon: Package },
   { path: '/products', label: 'Products', icon: ClipboardList },
+  { path: '/import', label: 'Import', icon: Upload },
   { path: '/orders', label: 'Orders', icon: ShoppingCart },
   { path: '/reports', label: 'Reports', icon: BarChart3 },
   { path: '/settings', label: 'Settings', icon: Settings },
@@ -39,6 +51,16 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, profile, roles, signOut, isAdmin, isManager } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  const displayName = profile?.full_name || profile?.email || user?.email || 'User';
+  const userRole = roles[0] || 'staff';
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,18 +155,44 @@ export function AppShell({ children }: AppShellProps) {
 
           {/* User Section */}
           <div className="p-4 border-t border-sidebar-border">
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-sidebar-accent/50">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                <User className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{mockUser.name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{mockUser.role}</p>
-              </div>
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <Bell className="h-4 w-4" />
-              </Button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-sidebar-accent/50 hover:bg-sidebar-accent transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="font-medium text-sm truncate">{displayName}</p>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-xs capitalize",
+                          isAdmin && "border-primary text-primary",
+                          isManager && !isAdmin && "border-[hsl(var(--info))] text-[hsl(var(--info))]"
+                        )}
+                      >
+                        {userRole}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Bell className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </aside>
