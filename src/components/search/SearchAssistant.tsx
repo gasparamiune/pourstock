@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Search, Wine, Beer, Coffee, GlassWater, Droplet, Martini, MapPin, X } from 'lucide-react';
+import { useState } from 'react';
+import { Search, Wine, Beer, Coffee, GlassWater, Droplet, Martini, MapPin, X, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { mockProducts, mockStockLevels, mockLocations } from '@/data/mockData';
+import { useProductSearch, usePopularProducts } from '@/hooks/useInventoryData';
 import { BeverageCategory, categoryLabels } from '@/types/inventory';
 import { cn } from '@/lib/utils';
 
@@ -20,6 +20,7 @@ interface SearchResult {
   productId: string;
   productName: string;
   category: BeverageCategory;
+  subtype: string | null;
   locations: {
     locationId: string;
     locationName: string;
@@ -32,70 +33,11 @@ export function SearchAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
 
-  // Build search index
-  const searchResults = useMemo(() => {
-    if (!query.trim()) return [];
+  const { results: searchResults, isLoading: isSearching } = useProductSearch(query);
+  const { products: popularProducts, isLoading: isLoadingPopular } = usePopularProducts(5);
 
-    const lowerQuery = query.toLowerCase();
-    
-    return mockProducts
-      .filter(product => 
-        product.name.toLowerCase().includes(lowerQuery) ||
-        product.category.toLowerCase().includes(lowerQuery) ||
-        product.subtype?.toLowerCase().includes(lowerQuery) ||
-        product.vendor?.toLowerCase().includes(lowerQuery)
-      )
-      .map(product => {
-        const stockInLocations = mockStockLevels
-          .filter(sl => sl.productId === product.id && sl.onHand > 0)
-          .map(sl => {
-            const location = mockLocations.find(l => l.id === sl.locationId);
-            return {
-              locationId: sl.locationId,
-              locationName: location?.name || 'Unknown',
-              onHand: sl.onHand,
-            };
-          });
-
-        return {
-          productId: product.id,
-          productName: product.name,
-          category: product.category,
-          locations: stockInLocations,
-        };
-      })
-      .slice(0, 8);
-  }, [query]);
-
-  // Recommendations when no query
-  const recommendations = useMemo(() => {
-    if (query.trim()) return [];
-    
-    // Show popular items or low stock items as recommendations
-    const popularItems = mockProducts.slice(0, 5).map(product => {
-      const stockInLocations = mockStockLevels
-        .filter(sl => sl.productId === product.id && sl.onHand > 0)
-        .map(sl => {
-          const location = mockLocations.find(l => l.id === sl.locationId);
-          return {
-            locationId: sl.locationId,
-            locationName: location?.name || 'Unknown',
-            onHand: sl.onHand,
-          };
-        });
-
-      return {
-        productId: product.id,
-        productName: product.name,
-        category: product.category,
-        locations: stockInLocations,
-      };
-    });
-
-    return popularItems;
-  }, [query]);
-
-  const displayResults = query.trim() ? searchResults : recommendations;
+  const displayResults = query.trim() ? searchResults : popularProducts;
+  const isLoading = query.trim() ? isSearching : isLoadingPopular;
 
   const handleResultClick = (result: SearchResult) => {
     setSelectedResult(result);
@@ -164,15 +106,21 @@ export function SearchAssistant() {
                   Popular Items
                 </div>
               )}
+
+              {isLoading && (
+                <div className="p-6 flex items-center justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              )}
               
-              {displayResults.length === 0 && query.trim() && (
+              {!isLoading && displayResults.length === 0 && query.trim() && (
                 <div className="p-6 text-center text-muted-foreground">
                   <p>No items found for "{query}"</p>
                   <p className="text-sm mt-1">Try searching by name, category, or vendor</p>
                 </div>
               )}
 
-              {displayResults.map((result) => (
+              {!isLoading && displayResults.map((result) => (
                 <div
                   key={result.productId}
                   className={cn(
@@ -209,9 +157,9 @@ export function SearchAssistant() {
                           ))}
                         </div>
                       ) : (
-                        <div className="mt-1 text-sm text-destructive flex items-center gap-1">
+                        <div className="mt-1 text-sm text-muted-foreground flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
-                          <span>Out of stock</span>
+                          <span>No stock levels set</span>
                         </div>
                       )}
                     </div>

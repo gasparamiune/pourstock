@@ -6,13 +6,20 @@ import {
   BarChart3,
   ClipboardCheck 
 } from 'lucide-react';
-import { StockMovement, MovementType } from '@/types/inventory';
-import { mockProducts, mockLocations } from '@/data/mockData';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Tables } from '@/integrations/supabase/types';
+
+type Product = Tables<'products'>;
+type Location = Tables<'locations'>;
+type StockMovement = Tables<'stock_movements'>;
+
+type MovementType = 'adjustment' | 'receiving' | 'transfer' | 'wastage' | 'breakage' | 'pos_sale' | 'count';
 
 interface RecentActivityProps {
   movements: StockMovement[];
+  products: Product[];
+  locations: Location[];
 }
 
 const movementConfig: Record<MovementType, { icon: React.ElementType; label: string; colorClass: string }> = {
@@ -25,36 +32,36 @@ const movementConfig: Record<MovementType, { icon: React.ElementType; label: str
   count: { icon: ClipboardCheck, label: 'Counted', colorClass: 'text-muted-foreground bg-secondary' },
 };
 
-export function RecentActivity({ movements }: RecentActivityProps) {
+export function RecentActivity({ movements, products, locations }: RecentActivityProps) {
   return (
     <div className="glass-card rounded-2xl p-5">
       <h3 className="font-display font-semibold text-lg mb-4">Recent Activity</h3>
       
       <div className="space-y-3">
         {movements.map((movement) => {
-          const product = mockProducts.find(p => p.id === movement.productId);
-          const location = mockLocations.find(l => l.id === movement.locationId);
-          const config = movementConfig[movement.movementType];
-          const Icon = config.icon;
+          const product = products.find(p => p.id === movement.product_id);
+          const location = locations.find(l => l.id === movement.location_id);
+          const config = movementConfig[movement.movement_type as MovementType];
+          const Icon = config?.icon || BarChart3;
 
           return (
             <div key={movement.id} className="flex items-start gap-3 py-2">
               <div className={cn(
                 "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                config.colorClass
+                config?.colorClass || 'text-muted-foreground bg-secondary'
               )}>
                 <Icon className="h-4 w-4" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">
-                  {config.label} <span className="text-foreground">{product?.name}</span>
+                  {config?.label || movement.movement_type} <span className="text-foreground">{product?.name || 'Unknown product'}</span>
                 </p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                   <span>{movement.quantity > 0 ? '+' : ''}{movement.quantity}</span>
                   <span>•</span>
-                  <span>{location?.name}</span>
+                  <span>{location?.name || 'Unknown location'}</span>
                   <span>•</span>
-                  <span>{formatDistanceToNow(movement.createdAt, { addSuffix: true })}</span>
+                  <span>{formatDistanceToNow(new Date(movement.created_at), { addSuffix: true })}</span>
                 </div>
                 {movement.notes && (
                   <p className="text-xs text-muted-foreground/70 mt-1">{movement.notes}</p>

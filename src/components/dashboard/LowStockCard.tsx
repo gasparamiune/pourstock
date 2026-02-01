@@ -1,9 +1,10 @@
 import { AlertCircle, ArrowRight, TrendingDown } from 'lucide-react';
-import { LowStockAlert } from '@/types/inventory';
 import { CategoryBadge } from '@/components/inventory/CategoryBadge';
 import { StockBar } from '@/components/inventory/StockIndicator';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { LowStockAlert } from '@/hooks/useInventoryData';
+import { BeverageCategory } from '@/types/inventory';
 
 interface LowStockCardProps {
   alerts: LowStockAlert[];
@@ -69,7 +70,7 @@ function LowStockItem({ alert, critical }: { alert: LowStockAlert; critical?: bo
     )}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <CategoryBadge category={alert.product.category} size="sm" showLabel={false} />
+          <CategoryBadge category={alert.product.category as BeverageCategory} size="sm" showLabel={false} />
           <span className="font-medium text-sm truncate">{alert.product.name}</span>
         </div>
         <div className="flex items-center gap-2">

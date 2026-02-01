@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Play, Plus, Scan } from 'lucide-react';
+import { Play, Plus, Scan, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { LowStockCard } from '@/components/dashboard/LowStockCard';
@@ -7,23 +7,40 @@ import { POSStatusCard } from '@/components/dashboard/POSStatusCard';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { CategoryOverview } from '@/components/dashboard/CategoryOverview';
 import { SearchAssistant } from '@/components/search/SearchAssistant';
-import { 
-  mockProducts, 
-  getLowStockAlerts, 
-  mockPOSSyncStatus, 
-  mockRecentMovements,
-  getStockByCategory 
-} from '@/data/mockData';
-import { BeverageCategory } from '@/types/inventory';
+import { useDashboardData } from '@/hooks/useInventoryData';
+import { BeverageCategory, POSSyncStatus } from '@/types/inventory';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const lowStockAlerts = getLowStockAlerts();
-  const stockByCategory = getStockByCategory('loc-1');
+  const { 
+    products, 
+    locations,
+    stockLevels,
+    movements, 
+    lowStockAlerts, 
+    stockByCategory, 
+    isLoading 
+  } = useDashboardData();
 
   const handleCategoryClick = (category: BeverageCategory) => {
     navigate(`/inventory?category=${category}`);
   };
+
+  // Mock POS status for now
+  const mockPOSSyncStatus: POSSyncStatus = {
+    isConnected: true,
+    lastSyncAt: new Date(Date.now() - 1000 * 60 * 5),
+    pendingItems: 0,
+    errors: [],
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 lg:p-6 max-w-7xl mx-auto">
@@ -72,10 +89,10 @@ export default function Dashboard() {
       {/* Stats */}
       <div className="mb-6">
         <QuickStats 
-          totalProducts={mockProducts.length}
+          totalProducts={products.length}
           lowStockCount={lowStockAlerts.length}
           lastCountedDays={2}
-          todayUsageValue={847}
+          todayUsageValue={0}
         />
       </div>
 
@@ -99,7 +116,11 @@ export default function Dashboard() {
             status={mockPOSSyncStatus}
             onSync={() => console.log('Syncing...')}
           />
-          <RecentActivity movements={mockRecentMovements} />
+          <RecentActivity 
+            movements={movements} 
+            products={products}
+            locations={locations}
+          />
         </div>
       </div>
     </div>
