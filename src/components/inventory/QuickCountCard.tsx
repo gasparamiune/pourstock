@@ -56,7 +56,16 @@ export function QuickCountCard({ product, stockLevel, onUpdate, isPartialMode, c
       </div>
 
       {/* Count Controls */}
-      <div className="flex items-center justify-center gap-4 py-4">
+      <div className="flex items-center justify-center gap-2 py-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleCountChange(-10)}
+          className="rounded-lg text-xs px-2 h-8"
+          disabled={!canEdit}
+        >
+          -10
+        </Button>
         <Button
           variant="secondary"
           size="icon-lg"
@@ -67,7 +76,7 @@ export function QuickCountCard({ product, stockLevel, onUpdate, isPartialMode, c
           <Minus className="h-6 w-6" />
         </Button>
 
-        <div className="min-w-[80px] text-center">
+        <div className="min-w-[60px] text-center">
           <span className="text-4xl font-display font-bold text-foreground">{count}</span>
           {product.containerUnit && (
             <p className="text-xs text-muted-foreground mt-1">
@@ -84,6 +93,15 @@ export function QuickCountCard({ product, stockLevel, onUpdate, isPartialMode, c
           disabled={!canEdit}
         >
           <Plus className="h-6 w-6" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleCountChange(10)}
+          className="rounded-lg text-xs px-2 h-8"
+          disabled={!canEdit}
+        >
+          +10
         </Button>
       </div>
 
