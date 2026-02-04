@@ -1,5 +1,6 @@
 import { Wine, Beer, Martini, Coffee, GlassWater, Droplet } from 'lucide-react';
-import { BeverageCategory, categoryLabels } from '@/types/inventory';
+import { BeverageCategory } from '@/types/inventory';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
 interface CategoryBadgeProps {
@@ -32,6 +33,7 @@ const iconSizes = {
 export function CategoryBadge({ category, size = 'md', showLabel = true }: CategoryBadgeProps) {
   const config = categoryConfig[category];
   const Icon = config.icon;
+  const { t } = useLanguage();
 
   return (
     <span 
@@ -42,7 +44,7 @@ export function CategoryBadge({ category, size = 'md', showLabel = true }: Categ
       )}
     >
       <Icon className={iconSizes[size]} />
-      {showLabel && <span>{categoryLabels[category]}</span>}
+      {showLabel && <span>{t(`category.${category}`)}</span>}
     </span>
   );
 }

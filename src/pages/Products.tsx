@@ -4,11 +4,12 @@ import { Plus, Search, MoreVertical, Edit, Copy, Archive, Trash2, Upload, Loader
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CategoryBadge } from '@/components/inventory/CategoryBadge';
-import { BeverageCategory, categoryLabels } from '@/types/inventory';
+import { BeverageCategory } from '@/types/inventory';
 import { cn } from '@/lib/utils';
 import { getUserFriendlyError } from '@/lib/errorHandler';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Tables } from '@/integrations/supabase/types';
 import {
   DropdownMenu,
@@ -39,6 +40,7 @@ const categories: BeverageCategory[] = ['wine', 'beer', 'spirits', 'coffee', 'so
 export default function Products() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -140,17 +142,17 @@ export default function Products() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display text-2xl lg:text-3xl font-bold mb-1">Products</h1>
-          <p className="text-muted-foreground">Manage your beverage catalog</p>
+          <h1 className="font-display text-2xl lg:text-3xl font-bold mb-1">{t('products.title')}</h1>
+          <p className="text-muted-foreground">{t('products.description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => navigate('/import')} className="gap-2">
             <Upload className="h-4 w-4" />
-            Import
+            {t('products.import')}
           </Button>
           <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
-            Add Product
+            {t('products.addProduct')}
           </Button>
         </div>
       </div>
@@ -159,7 +161,7 @@ export default function Products() {
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search products or vendors..."
+          placeholder={t('products.searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9 bg-secondary border-0"
@@ -177,7 +179,7 @@ export default function Products() {
               : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
           )}
         >
-          All ({getCategoryCount()})
+          {t('common.all')} ({getCategoryCount()})
         </button>
         {categories.map((category) => (
           <button
@@ -190,28 +192,28 @@ export default function Products() {
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
             )}
           >
-            {categoryLabels[category]} ({getCategoryCount(category)})
+            {t(`category.${category}`)} ({getCategoryCount(category)})
           </button>
         ))}
       </div>
 
       {/* Results */}
       <p className="text-sm text-muted-foreground mb-4">
-        {filteredProducts.length} products
+        {filteredProducts.length} {t('common.products')}
       </p>
 
       {/* Product List */}
       <div className="space-y-2">
         {filteredProducts.map((product) => (
-          <ProductCard key={product.id} product={product} onRefresh={fetchProducts} />
+          <ProductCard key={product.id} product={product} onRefresh={fetchProducts} t={t} />
         ))}
       </div>
 
       {filteredProducts.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>No products found</p>
+          <p>{t('products.noProducts')}</p>
           <Button variant="link" onClick={() => setIsAddDialogOpen(true)}>
-            Add your first product
+            {t('products.addFirst')}
           </Button>
         </div>
       )}
@@ -220,11 +222,11 @@ export default function Products() {
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add New Product</DialogTitle>
+            <DialogTitle>{t('products.addNew')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Product Name</Label>
+              <Label htmlFor="name">{t('products.productName')}</Label>
               <Input
                 id="name"
                 placeholder="e.g., Grey Goose Vodka"
@@ -234,7 +236,7 @@ export default function Products() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Category</Label>
+                <Label>{t('products.category')}</Label>
                 <Select
                   value={newProduct.category}
                   onValueChange={(value: BeverageCategory) => setNewProduct({ ...newProduct, category: value })}
@@ -245,14 +247,14 @@ export default function Products() {
                   <SelectContent>
                     {categories.map((cat) => (
                       <SelectItem key={cat} value={cat}>
-                        {categoryLabels[cat]}
+                        {t(`category.${cat}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="subtype">Subtype</Label>
+                <Label htmlFor="subtype">{t('products.subtype')}</Label>
                 <Input
                   id="subtype"
                   placeholder="e.g., vodka"
@@ -263,7 +265,7 @@ export default function Products() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="size">Container Size</Label>
+                <Label htmlFor="size">{t('products.containerSize')}</Label>
                 <Input
                   id="size"
                   placeholder="e.g., 0.75"
@@ -272,7 +274,7 @@ export default function Products() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Unit</Label>
+                <Label>{t('products.unit')}</Label>
                 <Select
                   value={newProduct.containerUnit}
                   onValueChange={(value) => setNewProduct({ ...newProduct, containerUnit: value })}
@@ -290,7 +292,7 @@ export default function Products() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="vendor">Vendor (optional)</Label>
+              <Label htmlFor="vendor">{t('products.vendor')}</Label>
               <Input
                 id="vendor"
                 placeholder="e.g., Premium Spirits Co"
@@ -301,10 +303,10 @@ export default function Products() {
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleAddProduct} disabled={!newProduct.name}>
-              Add Product
+              {t('products.addProduct')}
             </Button>
           </div>
         </DialogContent>
@@ -316,9 +318,10 @@ export default function Products() {
 interface ProductCardProps {
   product: Product;
   onRefresh: () => void;
+  t: (key: string) => string;
 }
 
-function ProductCard({ product, onRefresh }: ProductCardProps) {
+function ProductCard({ product, onRefresh, t }: ProductCardProps) {
   const { toast } = useToast();
 
   const handleDelete = async () => {
@@ -330,13 +333,13 @@ function ProductCard({ product, onRefresh }: ProductCardProps) {
     if (error) {
       toast({
         variant: 'destructive',
-        title: 'Error deleting product',
+        title: t('products.productDeleted'),
         description: getUserFriendlyError(error),
       });
     } else {
       toast({
-        title: 'Product deleted',
-        description: `${product.name} has been removed.`,
+        title: t('products.productDeleted'),
+        description: `${product.name} ${t('products.productDeletedDesc')}`,
       });
       onRefresh();
     }
@@ -351,13 +354,13 @@ function ProductCard({ product, onRefresh }: ProductCardProps) {
     if (error) {
       toast({
         variant: 'destructive',
-        title: 'Error updating product',
+        title: product.is_active ? t('products.productArchived') : t('products.productRestored'),
         description: getUserFriendlyError(error),
       });
     } else {
       toast({
-        title: product.is_active ? 'Product archived' : 'Product restored',
-        description: `${product.name} has been ${product.is_active ? 'archived' : 'restored'}.`,
+        title: product.is_active ? t('products.productArchived') : t('products.productRestored'),
+        description: `${product.name}`,
       });
       onRefresh();
     }
@@ -370,7 +373,7 @@ function ProductCard({ product, onRefresh }: ProductCardProps) {
           <h3 className="font-medium truncate">{product.name}</h3>
           {!product.is_active && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-              Inactive
+              {t('common.inactive')}
             </span>
           )}
         </div>
@@ -402,20 +405,20 @@ function ProductCard({ product, onRefresh }: ProductCardProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem>
               <Edit className="h-4 w-4 mr-2" />
-              Edit
+              {t('common.edit')}
             </DropdownMenuItem>
             <DropdownMenuItem>
               <Copy className="h-4 w-4 mr-2" />
-              Duplicate
+              {t('products.duplicate')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleArchive}>
               <Archive className="h-4 w-4 mr-2" />
-              {product.is_active ? 'Archive' : 'Restore'}
+              {product.is_active ? t('products.archive') : t('products.restore')}
             </DropdownMenuItem>
             <DropdownMenuItem className="text-destructive" onClick={handleDelete}>
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {t('common.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
