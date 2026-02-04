@@ -8,10 +8,12 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { CategoryOverview } from '@/components/dashboard/CategoryOverview';
 import { SearchAssistant } from '@/components/search/SearchAssistant';
 import { useDashboardData } from '@/hooks/useInventoryData';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { BeverageCategory, POSSyncStatus } from '@/types/inventory';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { 
     products, 
     locations,
@@ -46,8 +48,8 @@ export default function Dashboard() {
     <div className="p-4 lg:p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-4">
-        <h1 className="font-display text-2xl lg:text-3xl font-bold mb-1">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back! Here's your inventory overview.</p>
+        <h1 className="font-display text-2xl lg:text-3xl font-bold mb-1">{t('dashboard.title')}</h1>
+        <p className="text-muted-foreground">{t('dashboard.welcome')}</p>
       </div>
 
       {/* Search Assistant */}
@@ -64,7 +66,7 @@ export default function Dashboard() {
           onClick={() => navigate('/inventory?mode=count')}
         >
           <Play className="h-5 w-5" />
-          <span className="text-xs">Quick Count</span>
+          <span className="text-xs">{t('dashboard.quickCount')}</span>
         </Button>
         <Button 
           variant="secondary" 
@@ -73,7 +75,7 @@ export default function Dashboard() {
           onClick={() => navigate('/products?action=new')}
         >
           <Plus className="h-5 w-5" />
-          <span className="text-xs">Add Item</span>
+          <span className="text-xs">{t('dashboard.addItem')}</span>
         </Button>
         <Button 
           variant="secondary" 
@@ -82,7 +84,7 @@ export default function Dashboard() {
           onClick={() => navigate('/orders?action=receive')}
         >
           <Scan className="h-5 w-5" />
-          <span className="text-xs">Receive</span>
+          <span className="text-xs">{t('dashboard.receive')}</span>
         </Button>
       </div>
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BarChart3, TrendingDown, AlertTriangle, DollarSign, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
 type ReportType = 'variance' | 'usage' | 'cost' | 'waste';
@@ -8,18 +9,19 @@ type ReportType = 'variance' | 'usage' | 'cost' | 'waste';
 export default function Reports() {
   const [activeReport, setActiveReport] = useState<ReportType>('variance');
   const [dateRange, setDateRange] = useState('7d');
+  const { t } = useLanguage();
 
-  const reports: { id: ReportType; label: string; icon: React.ElementType; description: string }[] = [
-    { id: 'variance', label: 'Variance', icon: AlertTriangle, description: 'POS vs actual inventory' },
-    { id: 'usage', label: 'Usage', icon: TrendingDown, description: 'Consumption trends' },
-    { id: 'cost', label: 'Cost', icon: DollarSign, description: 'COGS analysis' },
-    { id: 'waste', label: 'Waste', icon: AlertTriangle, description: 'Breakage & wastage' },
+  const reports: { id: ReportType; labelKey: string; icon: React.ElementType; descKey: string }[] = [
+    { id: 'variance', labelKey: 'reports.variance', icon: AlertTriangle, descKey: 'reports.varianceDesc' },
+    { id: 'usage', labelKey: 'reports.usage', icon: TrendingDown, descKey: 'reports.usageDesc' },
+    { id: 'cost', labelKey: 'reports.cost', icon: DollarSign, descKey: 'reports.costDesc' },
+    { id: 'waste', labelKey: 'reports.waste', icon: AlertTriangle, descKey: 'reports.wasteDesc' },
   ];
 
   const dateRanges = [
-    { value: '7d', label: '7 Days' },
-    { value: '30d', label: '30 Days' },
-    { value: '90d', label: '90 Days' },
+    { value: '7d', label: `7 ${t('reports.days')}` },
+    { value: '30d', label: `30 ${t('reports.days')}` },
+    { value: '90d', label: `90 ${t('reports.days')}` },
   ];
 
   return (
@@ -27,8 +29,8 @@ export default function Reports() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display text-2xl lg:text-3xl font-bold mb-1">Reports</h1>
-          <p className="text-muted-foreground">Analytics and insights</p>
+          <h1 className="font-display text-2xl lg:text-3xl font-bold mb-1">{t('reports.title')}</h1>
+          <p className="text-muted-foreground">{t('reports.description')}</p>
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -72,8 +74,8 @@ export default function Reports() {
               )}>
                 <Icon className="h-5 w-5" />
               </div>
-              <h3 className="font-medium">{report.label}</h3>
-              <p className="text-xs text-muted-foreground mt-1">{report.description}</p>
+              <h3 className="font-medium">{t(report.labelKey)}</h3>
+              <p className="text-xs text-muted-foreground mt-1">{t(report.descKey)}</p>
             </button>
           );
         })}
@@ -85,7 +87,7 @@ export default function Reports() {
           <div>
             <div className="flex items-center gap-2 mb-6">
               <AlertTriangle className="h-5 w-5 text-warning" />
-              <h2 className="font-display font-semibold text-lg">Variance Report</h2>
+              <h2 className="font-display font-semibold text-lg">{t('reports.varianceReport')}</h2>
             </div>
             
             <div className="space-y-4">
@@ -98,12 +100,12 @@ export default function Reports() {
                       <p className="text-sm text-muted-foreground">Main Bar</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-warning">-2.5 bottles</p>
-                      <p className="text-xs text-muted-foreground">vs POS sales</p>
+                      <p className="text-lg font-bold text-warning">-2.5 {t('reports.bottles')}</p>
+                      <p className="text-xs text-muted-foreground">{t('reports.vsPOS')}</p>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    AI insight: Unusual variance compared to last 4 weeks average of 0.3 bottles
+                    {t('reports.aiInsight')} 0.3 {t('reports.bottles')}
                   </p>
                 </div>
 
@@ -114,8 +116,8 @@ export default function Reports() {
                       <p className="text-sm text-muted-foreground">Main Bar</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-foreground">-0.3 bottles</p>
-                      <p className="text-xs text-muted-foreground">vs POS sales</p>
+                      <p className="text-lg font-bold text-foreground">-0.3 {t('reports.bottles')}</p>
+                      <p className="text-xs text-muted-foreground">{t('reports.vsPOS')}</p>
                     </div>
                   </div>
                 </div>
@@ -127,8 +129,8 @@ export default function Reports() {
                       <p className="text-sm text-muted-foreground">Main Bar</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-success">+0.1 bottles</p>
-                      <p className="text-xs text-muted-foreground">vs POS sales</p>
+                      <p className="text-lg font-bold text-success">+0.1 {t('reports.bottles')}</p>
+                      <p className="text-xs text-muted-foreground">{t('reports.vsPOS')}</p>
                     </div>
                   </div>
                 </div>
@@ -140,24 +142,24 @@ export default function Reports() {
         {activeReport === 'usage' && (
           <div className="text-center py-12 text-muted-foreground">
             <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>Usage trends chart</p>
-            <p className="text-sm">Connect to Cloud for full analytics</p>
+            <p>{t('reports.usageChart')}</p>
+            <p className="text-sm">{t('reports.connectCloud')}</p>
           </div>
         )}
 
         {activeReport === 'cost' && (
           <div className="text-center py-12 text-muted-foreground">
             <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>Cost analysis</p>
-            <p className="text-sm">Connect to Cloud for full analytics</p>
+            <p>{t('reports.costAnalysis')}</p>
+            <p className="text-sm">{t('reports.connectCloud')}</p>
           </div>
         )}
 
         {activeReport === 'waste' && (
           <div className="text-center py-12 text-muted-foreground">
             <AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>Waste & breakage log</p>
-            <p className="text-sm">No waste recorded in this period</p>
+            <p>{t('reports.wasteLog')}</p>
+            <p className="text-sm">{t('reports.noWaste')}</p>
           </div>
         )}
       </div>

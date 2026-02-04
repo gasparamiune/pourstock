@@ -7,7 +7,8 @@ import { QuickCountCard } from '@/components/inventory/QuickCountCard';
 import { CategoryBadge } from '@/components/inventory/CategoryBadge';
 import { StockIndicator } from '@/components/inventory/StockIndicator';
 import { useProducts, useLocations, useStockLevels } from '@/hooks/useInventoryData';
-import { BeverageCategory, categoryLabels } from '@/types/inventory';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { BeverageCategory } from '@/types/inventory';
 import { cn } from '@/lib/utils';
 import { getUserFriendlyError } from '@/lib/errorHandler';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +23,7 @@ export default function Inventory() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { isManager } = useAuth();
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BeverageCategory | null>(
     (searchParams.get('category') as BeverageCategory) || null
@@ -121,20 +123,20 @@ export default function Inventory() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display text-2xl lg:text-3xl font-bold mb-1">Inventory</h1>
+          <h1 className="font-display text-2xl lg:text-3xl font-bold mb-1">{t('inventory.title')}</h1>
           <p className="text-muted-foreground">
-            {viewMode === 'count' ? 'Quick Count Mode' : 'Manage your stock levels'}
+            {viewMode === 'count' ? t('inventory.quickCount') : t('inventory.manageStock')}
           </p>
         </div>
         {viewMode === 'list' ? (
           <Button onClick={startCountSession} className="gap-2">
             <Play className="h-4 w-4" />
-            Start Count
+            {t('inventory.startCount')}
           </Button>
         ) : (
           <Button onClick={endCountSession} variant="outline" className="gap-2">
             <X className="h-4 w-4" />
-            End Session
+            {t('inventory.endSession')}
           </Button>
         )}
       </div>
@@ -157,7 +159,7 @@ export default function Inventory() {
           </button>
         ))}
         {locations.length === 0 && (
-          <p className="text-sm text-muted-foreground py-2">No locations configured</p>
+          <p className="text-sm text-muted-foreground py-2">{t('inventory.noLocations')}</p>
         )}
       </div>
 
@@ -166,7 +168,7 @@ export default function Inventory() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search products..."
+            placeholder={t('inventory.searchProducts')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 bg-secondary border-0"
@@ -196,7 +198,7 @@ export default function Inventory() {
               : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
           )}
         >
-          All
+          {t('common.all')}
         </button>
         {categories.map((category) => (
           <button
@@ -209,7 +211,7 @@ export default function Inventory() {
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
             )}
           >
-            {categoryLabels[category]}
+            {t(`category.${category}`)}
           </button>
         ))}
       </div>
@@ -217,8 +219,8 @@ export default function Inventory() {
       {/* Results Count */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-muted-foreground">
-          {filteredProducts.length} items
-          {showLowOnly && ' (low stock only)'}
+          {filteredProducts.length} {t('common.items')}
+          {showLowOnly && ` (${t('inventory.lowStockOnly')})`}
         </p>
       </div>
 
@@ -300,11 +302,11 @@ export default function Inventory() {
                         parLevel={stockLevel.par_level}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Par: {stockLevel.par_level}
+                        {t('inventory.par')}: {stockLevel.par_level}
                       </p>
                     </>
                   ) : (
-                    <p className="text-xs text-muted-foreground">No stock level</p>
+                    <p className="text-xs text-muted-foreground">{t('inventory.noStockLevel')}</p>
                   )}
                 </div>
               </div>
@@ -315,8 +317,8 @@ export default function Inventory() {
 
       {filteredProducts.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          <p>No products found</p>
-          <p className="text-sm mt-1">Try adjusting your filters</p>
+          <p>{t('inventory.noProducts')}</p>
+          <p className="text-sm mt-1">{t('inventory.adjustFilters')}</p>
         </div>
       )}
     </div>

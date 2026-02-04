@@ -1,5 +1,6 @@
 import { Wine, Beer, Martini, Coffee, GlassWater, Droplet } from 'lucide-react';
-import { BeverageCategory, categoryLabels } from '@/types/inventory';
+import { BeverageCategory } from '@/types/inventory';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
 interface CategoryOverviewProps {
@@ -18,10 +19,11 @@ const categoryConfig: Record<BeverageCategory, { icon: React.ElementType; gradie
 
 export function CategoryOverview({ data, onCategoryClick }: CategoryOverviewProps) {
   const categories = Object.keys(categoryConfig) as BeverageCategory[];
+  const { t } = useLanguage();
 
   return (
     <div className="glass-card rounded-2xl p-5">
-      <h3 className="font-display font-semibold text-lg mb-4">Categories</h3>
+      <h3 className="font-display font-semibold text-lg mb-4">{t('dashboard.categories')}</h3>
       
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {categories.map((category) => {
@@ -43,7 +45,7 @@ export function CategoryOverview({ data, onCategoryClick }: CategoryOverviewProp
             >
               <Icon className="h-6 w-6 text-white/90 mb-2" />
               <p className="font-semibold text-white text-lg">{stats.total}</p>
-              <p className="text-sm text-white/80">{categoryLabels[category]}</p>
+              <p className="text-sm text-white/80">{t(`category.${category}`)}</p>
               {stats.low > 0 && (
                 <div className="absolute top-2 right-2 w-5 h-5 bg-white/90 rounded-full flex items-center justify-center">
                   <span className="text-xs font-bold text-destructive">{stats.low}</span>

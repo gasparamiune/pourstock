@@ -16,26 +16,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { mockLocations, mockUser } from '@/data/mockData';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
 type SettingsSection = 'locations' | 'users' | 'pos' | 'notifications';
 
 export default function Settings() {
   const [activeSection, setActiveSection] = useState<SettingsSection>('locations');
+  const { t } = useLanguage();
 
-  const sections: { id: SettingsSection; label: string; icon: React.ElementType }[] = [
-    { id: 'locations', label: 'Locations', icon: MapPin },
-    { id: 'users', label: 'Users & Roles', icon: Users },
-    { id: 'pos', label: 'Spectra POS', icon: Link },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
+  const sections: { id: SettingsSection; labelKey: string; icon: React.ElementType }[] = [
+    { id: 'locations', labelKey: 'settings.locations', icon: MapPin },
+    { id: 'users', labelKey: 'settings.usersRoles', icon: Users },
+    { id: 'pos', labelKey: 'settings.spectraPOS', icon: Link },
+    { id: 'notifications', labelKey: 'settings.notifications', icon: Bell },
   ];
 
   return (
     <div className="p-4 lg:p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="font-display text-2xl lg:text-3xl font-bold mb-1">Settings</h1>
-        <p className="text-muted-foreground">Configure your inventory system</p>
+        <h1 className="font-display text-2xl lg:text-3xl font-bold mb-1">{t('settings.title')}</h1>
+        <p className="text-muted-foreground">{t('settings.description')}</p>
       </div>
 
       <div className="grid lg:grid-cols-[240px_1fr] gap-6">
@@ -55,7 +57,7 @@ export default function Settings() {
                 )}
               >
                 <Icon className="h-5 w-5" />
-                {section.label}
+                {t(section.labelKey)}
               </button>
             );
           })}
@@ -66,10 +68,10 @@ export default function Settings() {
           {activeSection === 'locations' && (
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="font-display font-semibold text-lg">Locations</h2>
+                <h2 className="font-display font-semibold text-lg">{t('settings.locations')}</h2>
                 <Button size="sm" className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Add Location
+                  {t('settings.addLocation')}
                 </Button>
               </div>
               
@@ -111,10 +113,10 @@ export default function Settings() {
           {activeSection === 'users' && (
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="font-display font-semibold text-lg">Users & Roles</h2>
+                <h2 className="font-display font-semibold text-lg">{t('settings.usersRoles')}</h2>
                 <Button size="sm" className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Invite User
+                  {t('settings.inviteUser')}
                 </Button>
               </div>
               
@@ -141,11 +143,11 @@ export default function Settings() {
                 <div className="flex items-start gap-3">
                   <Shield className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-sm">Role Permissions</h4>
+                    <h4 className="font-medium text-sm">{t('settings.rolePermissions')}</h4>
                     <ul className="text-sm text-muted-foreground mt-2 space-y-1">
-                      <li><strong>Admin:</strong> Full access to all features</li>
-                      <li><strong>Manager:</strong> Inventory, orders, reports, cannot manage users</li>
-                      <li><strong>Staff:</strong> Quick count and receiving only</li>
+                      <li><strong>Admin:</strong> {t('settings.adminDesc')}</li>
+                      <li><strong>Manager:</strong> {t('settings.managerDesc')}</li>
+                      <li><strong>Staff:</strong> {t('settings.staffDesc')}</li>
                     </ul>
                   </div>
                 </div>
@@ -156,7 +158,7 @@ export default function Settings() {
           {activeSection === 'pos' && (
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="font-display font-semibold text-lg">Spectra POS Integration</h2>
+                <h2 className="font-display font-semibold text-lg">{t('settings.posIntegration')}</h2>
               </div>
               
               <div className="space-y-6">
@@ -164,36 +166,36 @@ export default function Settings() {
                   <div className="flex items-center gap-3">
                     <CheckCircle2 className="h-6 w-6 text-success" />
                     <div>
-                      <h3 className="font-medium">Connected to Spectra</h3>
-                      <p className="text-sm text-muted-foreground">Spectra POS System</p>
+                      <h3 className="font-medium">{t('settings.connectedTo')}</h3>
+                      <p className="text-sm text-muted-foreground">{t('settings.posSystem')}</p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="font-medium mb-3">Product Mapping</h3>
+                  <h3 className="font-medium mb-3">{t('settings.productMapping')}</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Map your POS items to inventory products for automatic stock updates.
+                    {t('settings.productMappingDesc')}
                   </p>
-                  <Button variant="outline">Configure Mapping</Button>
+                  <Button variant="outline">{t('settings.configureMapping')}</Button>
                 </div>
 
                 <div>
-                  <h3 className="font-medium mb-3">Serving Sizes</h3>
+                  <h3 className="font-medium mb-3">{t('settings.servingSizes')}</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Set standard pour sizes for accurate depletion tracking.
+                    {t('settings.servingSizesDesc')}
                   </p>
                   <div className="grid gap-3">
                     <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                      <span className="text-sm">Wine (glass)</span>
+                      <span className="text-sm">{t('settings.wineGlass')}</span>
                       <span className="text-sm font-medium">150ml</span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                      <span className="text-sm">Spirit (shot)</span>
+                      <span className="text-sm">{t('settings.spiritShot')}</span>
                       <span className="text-sm font-medium">40ml</span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                      <span className="text-sm">Beer (pint)</span>
+                      <span className="text-sm">{t('settings.beerPint')}</span>
                       <span className="text-sm font-medium">473ml</span>
                     </div>
                   </div>
@@ -204,37 +206,37 @@ export default function Settings() {
 
           {activeSection === 'notifications' && (
             <div>
-              <h2 className="font-display font-semibold text-lg mb-6">Notifications</h2>
+              <h2 className="font-display font-semibold text-lg mb-6">{t('settings.notifications')}</h2>
               
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
                   <div>
-                    <h3 className="font-medium">Low Stock Alerts</h3>
-                    <p className="text-sm text-muted-foreground">Get notified when items hit reorder threshold</p>
+                    <h3 className="font-medium">{t('settings.lowStockAlerts')}</h3>
+                    <p className="text-sm text-muted-foreground">{t('settings.lowStockAlertsDesc')}</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
                 
                 <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
                   <div>
-                    <h3 className="font-medium">Variance Alerts</h3>
-                    <p className="text-sm text-muted-foreground">Notify when variance exceeds 10%</p>
+                    <h3 className="font-medium">{t('settings.varianceAlerts')}</h3>
+                    <p className="text-sm text-muted-foreground">{t('settings.varianceAlertsDesc')}</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
                 
                 <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
                   <div>
-                    <h3 className="font-medium">Order Reminders</h3>
-                    <p className="text-sm text-muted-foreground">Weekly reminder to review suggested orders</p>
+                    <h3 className="font-medium">{t('settings.orderReminders')}</h3>
+                    <p className="text-sm text-muted-foreground">{t('settings.orderRemindersDesc')}</p>
                   </div>
                   <Switch />
                 </div>
                 
                 <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
                   <div>
-                    <h3 className="font-medium">Count Reminders</h3>
-                    <p className="text-sm text-muted-foreground">Remind to count inventory weekly</p>
+                    <h3 className="font-medium">{t('settings.countReminders')}</h3>
+                    <p className="text-sm text-muted-foreground">{t('settings.countRemindersDesc')}</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
