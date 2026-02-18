@@ -199,6 +199,25 @@ const translations: Record<Language, Record<string, string>> = {
     'import.required': 'required',
     'import.productName': 'Product name',
     
+    // Table Plan
+    'nav.tablePlan': 'Table Plan',
+    'tablePlan.title': 'Table Plan',
+    'tablePlan.subtitle': 'Upload today\'s Køkkenliste to see tonight\'s seating',
+    'tablePlan.uploadPdf': 'Upload Køkkenliste PDF',
+    'tablePlan.dragDrop': 'Drag and drop or click to browse',
+    'tablePlan.processing': 'Processing PDF...',
+    'tablePlan.extracting': 'Extracting reservations from 18:00 onwards',
+    'tablePlan.free': 'Free',
+    'tablePlan.guests': 'guests',
+    'tablePlan.room': 'Room',
+    'tablePlan.tablesOccupied': 'tables occupied',
+    'tablePlan.noReservations': 'No restaurant reservations found for tonight',
+    'tablePlan.newUpload': 'New Upload',
+    'tablePlan.extracted': 'Reservations extracted',
+    'tablePlan.reservationsFound': 'reservations found',
+    'tablePlan.error': 'Error',
+    'tablePlan.errorDesc': 'Could not extract reservations from the PDF. Please try again.',
+
     // Language
     'language.english': 'English',
     'language.danish': 'Dansk',
@@ -393,6 +412,25 @@ const translations: Record<Language, Record<string, string>> = {
     'import.required': 'påkrævet',
     'import.productName': 'Produktnavn',
     
+    // Table Plan
+    'nav.tablePlan': 'Bordplan',
+    'tablePlan.title': 'Bordplan',
+    'tablePlan.subtitle': 'Upload dagens køkkenliste for at se aftenens bordplan',
+    'tablePlan.uploadPdf': 'Upload køkkenliste PDF',
+    'tablePlan.dragDrop': 'Træk og slip eller klik for at vælge',
+    'tablePlan.processing': 'Behandler PDF...',
+    'tablePlan.extracting': 'Udtrækker reservationer fra kl. 18:00',
+    'tablePlan.free': 'Fri',
+    'tablePlan.guests': 'gæster',
+    'tablePlan.room': 'Værelse',
+    'tablePlan.tablesOccupied': 'borde optaget',
+    'tablePlan.noReservations': 'Ingen restaurantreservationer fundet for i aften',
+    'tablePlan.newUpload': 'Ny upload',
+    'tablePlan.extracted': 'Reservationer udtrukket',
+    'tablePlan.reservationsFound': 'reservationer fundet',
+    'tablePlan.error': 'Fejl',
+    'tablePlan.errorDesc': 'Kunne ikke udtrække reservationer fra PDF. Prøv igen.',
+
     // Language
     'language.english': 'English',
     'language.danish': 'Dansk',

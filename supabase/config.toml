@@ -1,1 +1,4 @@
 project_id = "mtbfvklhymahyyjmlgrq"
+
+[functions.parse-table-plan]
+verify_jwt = false

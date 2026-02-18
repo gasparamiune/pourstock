@@ -15,6 +15,7 @@ import Import from "./pages/Import";
 import Orders from "./pages/Orders";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import TablePlan from "./pages/TablePlan";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
                         <Route path="/inventory" element={<Inventory />} />
                         <Route path="/products" element={<Products />} />
                         <Route path="/import" element={<Import />} />
+                        <Route path="/table-plan" element={<TablePlan />} />
                         <Route path="/orders" element={<Orders />} />
                         <Route path="/reports" element={<Reports />} />
                         <Route path="/settings" element={<ProtectedRoute requireAdmin={true}><Settings /></ProtectedRoute>} />
