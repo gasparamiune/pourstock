@@ -13,7 +13,8 @@ import {
   Bell,
   User,
   LogOut,
-  Upload
+  Upload,
+  LayoutGrid
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
   { path: '/inventory', labelKey: 'nav.inventory', icon: Package },
   { path: '/products', labelKey: 'nav.products', icon: ClipboardList },
   { path: '/import', labelKey: 'nav.import', icon: Upload },
+  { path: '/table-plan', labelKey: 'nav.tablePlan', icon: LayoutGrid },
   { path: '/orders', labelKey: 'nav.orders', icon: ShoppingCart },
   { path: '/reports', labelKey: 'nav.reports', icon: BarChart3 },
   { path: '/settings', labelKey: 'nav.settings', icon: Settings },
