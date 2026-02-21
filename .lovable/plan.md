@@ -1,103 +1,56 @@
 
 
-# Table Layout Corrections and Expansion
+# Cluster Occupied Tables Together
 
-## Summary
-Correct all table capacities to match the real restaurant, add a new top row (B8, B18, B28) plus a large round 8-top table, mark round tables visually, and update the row-first assignment logic.
+## Problem
+Currently, the assignment logic fills from the bottom up but can scatter guests across non-adjacent rows -- e.g., one table in row 9, the next in row 7, leaving empty rows in between. The restaurant should feel "full in one area" rather than having isolated guests spread out.
 
----
+## Solution
+Change the assignment priority so that **proximity to already-occupied rows** is the strongest factor (after capacity fit). Instead of simply preferring "any occupied row," the algorithm will prefer the row **closest** to an existing occupied table. This naturally clusters all reservations into a contiguous block starting from the bottom.
 
-## 1. Corrected Table Capacities
+### New Sort Priority
+1. **Smallest capacity that fits** (unchanged)
+2. **Closest to an occupied row** -- measured by minimum row distance to any already-occupied row. Tables in an occupied row get distance 0. Tables 1 row away get distance 1, etc. Smaller distance wins.
+3. **Prefer higher row numbers** (bottom-to-top) -- used as tiebreaker and for the very first assignment
+4. **Deprioritize B37** (unchanged)
 
-The user clarified that **all tables default to capacity 2**, except:
-- **Column 1** (B1-B8, B35): capacity **4** each
-- **B4, B14, B32**: capacity **6**, round tables
-- **B8** (new): capacity **4** (follows column 1 rule)
-- **New large round table (B34)**: capacity **8**, round
-
-This means the following tables change from their current values:
-
-| Table | Current Cap | Correct Cap |
-|-------|------------|-------------|
-| B3    | 6          | 4           |
-| B4    | 4          | 6 (round)   |
-| B13   | 6          | 2           |
-| B14   | 2          | 6 (round)   |
-| B23   | 6          | 2           |
-| B32   | 6          | 6 (round, add shape only) |
-| B35   | 4          | 4 (unchanged) |
-
----
-
-## 2. New Row Added (Top of Restaurant)
-
-A new row is added at the **top** (back of restaurant), becoming the new Row 1. All existing rows shift down by one. The grid expands from 8 to **9 rows**.
-
-New Row 1 contents:
-- **B8** -- col 1, capacity 4
-- **B18** -- col 2, capacity 2
-- **B28** -- col 3, capacity 2
-- **B34** -- col 4 (above B31), capacity 8, round
-
----
-
-## 3. Complete Layout (9 rows x 4 columns)
-
-```text
-Row 1:  B8(4)    B18(2)   B28(2)   B34(8,round)
-Row 2:  B7(4)    B17(2)   B27(2)   --
-Row 3:  B6(4)    B16(2)   B26(2)   B31(2)
-Row 4:  B5(4)    B15(2)   B25(2)   --
-Row 5:  B4(6,R)  B14(6,R) B32(6,R) --
-Row 6:  B3(4)    B13(2)   B23(2)   --
-Row 7:  B2(4)    B12(2)   B22(2)   B33(2)
-Row 8:  B1(4)    B11(2)   B21(2)   --
-Row 9:  B35(4)   B36(2)   B37(2)   --
-```
-
-(R = round table)
-
----
-
-## 4. Round Table Visual Indicator
-
-Add `shape?: 'round' | 'rect'` to the `TableDef` interface. Round tables (B4, B14, B32, B34) will render with fully rounded corners (`rounded-full` or `rounded-3xl`) instead of the standard `rounded-xl`, making them visually distinct on the floor plan.
-
----
-
-## 5. Row-First Assignment Logic
-
-The assignment algorithm is updated to:
-1. Sort reservations largest-first (unchanged)
-2. For each reservation, find fitting tables sorted by:
-   - Smallest capacity that fits
-   - Prefer rows that already have an occupied table (fill the row first)
-   - Then prefer higher row numbers (bottom-to-top)
-   - Deprioritize B37 last
-3. This ensures if B35 is filled, B36 fills before jumping to B1's row.
-
----
+### Example Behavior
+- First reservation goes to row 9 (bottom-to-top default)
+- Second reservation: row 9 (distance 0) or row 8 (distance 1) preferred over row 3 (distance 6)
+- As rows 8 and 9 fill, row 7 becomes the next closest, keeping everyone clustered
 
 ## Technical Details
 
-### Files Modified
+### File Modified
+**`src/components/tableplan/FloorPlan.tsx`** -- Update the candidate sorting inside `assignTablesToReservations()`:
 
-- **`src/components/tableplan/TableCard.tsx`**:
-  - Add `shape?: 'round' | 'rect'` to `TableDef` interface
-  - Apply `rounded-3xl` styling when `shape === 'round'`
+```typescript
+// Helper: minimum distance from a row to any occupied row
+const rowDistance = (row: number): number => {
+  if (occupiedRows.size === 0) return 0;
+  let min = Infinity;
+  for (const r of occupiedRows) {
+    min = Math.min(min, Math.abs(row - r));
+  }
+  return min;
+};
 
-- **`src/components/tableplan/FloorPlan.tsx`**:
-  - Replace entire `TABLE_LAYOUT` array with corrected 31-table layout (9 rows)
-  - Update grid rendering from `length: 8` to `length: 9`
-  - Update `assignTablesToReservations()` with row-first logic: prefer rows with existing occupants before starting new rows
-  - Update total table count display
-
-### Assignment Sort Key
-```text
-sort by:
-  1. capacity ASC (smallest fit)
-  2. row already has occupants? (yes first)
-  3. row DESC (bottom-to-top)
-  4. B37 last
+// Sort candidates
+.sort((a, b) => {
+  // 1. Smallest capacity that fits
+  const capDiff = a.capacity - b.capacity;
+  if (capDiff !== 0) return capDiff;
+  // 2. Closest to occupied rows (cluster together)
+  const distDiff = rowDistance(a.row) - rowDistance(b.row);
+  if (distDiff !== 0) return distDiff;
+  // 3. Prefer higher row numbers (bottom-to-top)
+  if (a.row !== b.row) return b.row - a.row;
+  // 4. Deprioritize B37
+  if (a.id === 'B37') return 1;
+  if (b.id === 'B37') return -1;
+  return 0;
+})
 ```
+
+This single change replaces the "prefer any occupied row" logic with distance-based clustering, keeping all occupied tables in a tight group.
 
