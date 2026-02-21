@@ -1,98 +1,107 @@
 
-# Table Plan Feature
 
-## What You Get
-A new "Bordplan" (Table Plan) tab in the sidebar. When you open it, you can upload your daily Kokkenliste PDF. The app extracts all restaurant reservations from 18:00 onwards and displays them on a colourful visual map of your restaurant's actual table layout -- matching the floor plan from your PDF exactly.
+# Table Plan Enhancements
 
-Each table card will show:
-- Table number (e.g. B7) prominently displayed
-- Number of guests and dish menu type (2-ret / 3-ret)
-- Guest name or room number
-- Important notes (allergies, intolerances, included services) highlighted with a warning badge
-- Empty/free tables shown in a muted style with "Fri" label
+## Summary
+This plan covers all the collected requirements in one go: expanding reservation types, updating table assignment logic, adding cutlery/table setting info per reservation type, and adding a preparation summary panel showing total cutlery and glassware needed.
 
-The layout will be colourful with:
-- Amber/gold for tables with 3-dish menus
-- Blue/teal for tables with 2-dish menus
-- Red warning badges for allergy/dietary notes
-- Green glow for VIP or special notes
-- Muted dark cards for free tables
-- Table size visually reflected (6-person tables are wider)
+---
 
-## Restaurant Layout (from your PDF)
-The visual grid will mirror your actual floor plan with 4 columns and 8 rows:
+## 1. Expand Reservation Types
+
+Currently the system only handles `dishCount` (2 or 3). We will replace this with a `reservationType` field that supports:
+- **2-ret** (2-course menu)
+- **3-ret** (3-course menu)
+- **4-ret** (4-course menu)
+- **A la carte**
+- **Bordreservation** (table-only reservation, no food pre-ordered)
+
+### Changes
+- **`Reservation` interface** in `TableCard.tsx`: Add `reservationType: '2-ret' | '3-ret' | '4-ret' | 'a-la-carte' | 'bordreservation'` field alongside the existing `dishCount` (kept for backward compatibility).
+- **Edge function prompt** (`parse-table-plan/index.ts`): Update the AI extraction prompt to identify all 5 types and return the `reservationType` string.
+- **`TableCard.tsx`**: Update color-coding to handle all 5 types (e.g. amber for 3-ret, sky for 2-ret, emerald for 4-ret, violet for a la carte, slate for bordreservation).
+- **`FloorPlan.tsx` legend**: Add legend entries for all 5 types.
+
+---
+
+## 2. Table Assignment: Bottom-to-Top, Avoid B37
+
+Currently tables are assigned by smallest-fit only. The new logic will:
+1. Sort reservations by party size (largest first) -- unchanged.
+2. When multiple tables of the same capacity are available, prefer tables with **higher row numbers first** (bottom of the restaurant = rows 7, 8 before rows 1, 2).
+3. Among equal candidates, **deprioritize B37** by sorting it last.
+
+### Changes
+- **`assignTablesToReservations()`** in `FloorPlan.tsx`: Update the candidate sorting to use `(capacity, -row, id === 'B37')` as the sort key so bottom tables fill first and B37 is used only when no alternative exists.
+
+---
+
+## 3. Cutlery / Table Setting per Reservation Type
+
+Each reservation type requires specific cutlery:
 
 ```text
- Col 1 (4p)   Col 2 (2p)   Col 3 (2p)   Col 4
-+-----------+-----------+-----------+-----------+
-|  B7 (4p)  | B17 (2p)  | B27 (2p)  |           |
-+-----------+-----------+-----------+-----------+
-|  B6 (4p)  | B16 (2p)  | B26 (2p)  | B31 (2p)  |
-+-----------+-----------+-----------+-----------+
-|  B5 (4p)  | B15 (2p)  | B25 (2p)  |           |
-+-----------+-----------+-----------+-----------+
-|  B4 (4p)  | B14 (2p)  | B32 (6p)  |           |
-+-----------+-----------+-----------+-----------+
-|  B3 (6p)  | B13 (6p)  | B23 (6p)  |           |
-+-----------+-----------+-----------+-----------+
-|  B2 (4p)  | B12 (2p)  | B22 (2p)  | B33 (2p)  |
-+-----------+-----------+-----------+-----------+
-|  B1 (4p)  | B11 (2p)  | B21 (2p)  |           |
-+-----------+-----------+-----------+-----------+
-| B35 (4p)  | B36 (2p)  | B37 (2p)  |           |
-+-----------+-----------+-----------+-----------+
+Type             | Forks | Steak Knives | Butter Knives | Spoons
+-----------------+-------+--------------+---------------+-------
+2-ret            |   2   |      1       |       1       |   0
+3-ret            |   2   |      1       |       1       |   1
+4-ret            |   3   |      1       |       2       |   1
+A la carte       |   2   |      1       |       1       |   1
+Bordreservation  |   2   |      1       |       1       |   1
 ```
 
-## How It Works
-1. Open "Bordplan" from the sidebar
-2. Drag-and-drop or click to upload the daily Kokkenliste PDF
-3. A backend function parses the PDF using AI, extracting only reservations from 18:00+
-4. Reservations are auto-assigned to tables based on party size (smallest suitable table first)
-5. The floor plan renders with each occupied table showing guest details and notes
+(A la carte and bordreservation default to the 3-ret setting.)
 
-## What Gets Built
+### Changes
+- **New utility** `getCutleryForType()` in a new file `src/components/tableplan/cutleryUtils.ts`: Returns the cutlery counts per guest based on reservation type.
 
-### New Files
-- **`src/pages/TablePlan.tsx`** -- Main page with PDF upload and floor plan display
-- **`src/components/tableplan/PdfUploader.tsx`** -- Drag-and-drop upload component
-- **`src/components/tableplan/FloorPlan.tsx`** -- The visual grid matching the restaurant layout
-- **`src/components/tableplan/TableCard.tsx`** -- Individual table card with guest info, colour-coded
-- **`supabase/functions/parse-table-plan/index.ts`** -- Backend function that sends PDF to AI for extraction
+---
 
-### Modified Files
-- **`src/App.tsx`** -- Add `/table-plan` route
-- **`src/components/layout/AppShell.tsx`** -- Add "Bordplan" nav item with a LayoutGrid icon
-- **`src/contexts/LanguageContext.tsx`** -- Add English/Danish translations for all table plan text
+## 4. Preparation Summary Panel
+
+A new card displayed **below the floor plan** (not on individual table cards) showing totals for the evening:
+
+- **Cutlery totals**: Sum of forks, steak knives, butter knives, and spoons across all reservations (per-guest count multiplied by guest count).
+- **Glassware totals**: 1 water glass, 1 white wine glass, and 1 red wine glass per guest.
+
+The panel will be a clean card with icon rows showing each item and its total count.
+
+### Changes
+- **New component** `src/components/tableplan/PreparationSummary.tsx`: Takes the reservations array, computes totals using `getCutleryForType()`, and renders a summary card.
+- **`TablePlan.tsx`**: Render `<PreparationSummary>` below `<FloorPlan>` when reservations are present.
+- **Translations**: Add labels for cutlery items (forks, knives, spoons) and glassware (water, white wine, red wine) in both English and Danish.
+
+---
 
 ## Technical Details
 
-### Floor Plan Data Structure
-The table layout is hardcoded as a constant matching the restaurant's physical layout:
+### Files Created
+- `src/components/tableplan/cutleryUtils.ts` -- Cutlery mapping per reservation type
+- `src/components/tableplan/PreparationSummary.tsx` -- Summary card component
+
+### Files Modified
+- `src/components/tableplan/TableCard.tsx` -- Add `reservationType` to interface, update color-coding for 5 types
+- `src/components/tableplan/FloorPlan.tsx` -- Update assignment logic (bottom-to-top, avoid B37), update legend for 5 types
+- `src/pages/TablePlan.tsx` -- Add `PreparationSummary` below the floor plan
+- `supabase/functions/parse-table-plan/index.ts` -- Update AI prompt to extract `reservationType` with all 5 options
+- `src/contexts/LanguageContext.tsx` -- Add translations for new reservation types, cutlery, and glassware labels
+
+### Color Scheme for Reservation Types
+- **2-ret**: Sky/blue (existing)
+- **3-ret**: Amber/gold (existing)
+- **4-ret**: Emerald/green
+- **A la carte**: Violet/purple
+- **Bordreservation**: Slate/gray with solid border (distinct from "free" tables which use dashed border)
+
+### Preparation Summary Layout
 ```text
-type TableDef = { id: string; capacity: number; row: number; col: number }
++---------------------------------------------------+
+|  Preparation Summary                              |
++---------------------------------------------------+
+|  Cutlery                    |  Glassware           |
+|  Fork icon        x 48     |  Water glass   x 24  |
+|  Steak knife icon x 24     |  White wine    x 24  |
+|  Butter knife icon x 28    |  Red wine      x 24  |
+|  Spoon icon       x 18     |                      |
++---------------------------------------------------+
 ```
-Each table has a fixed position in the grid. The grid renders with CSS Grid (8 rows x 4 columns) so it matches the real restaurant.
-
-### Table Card Design
-- Free tables: dark muted background, "Fri" label, dashed border
-- 2-dish occupied: teal/blue gradient border, compact info
-- 3-dish occupied: amber/gold gradient border
-- Allergy/notes: red pulsing badge in the corner
-- 6-person tables: span wider in the grid (col-span-1 but taller card)
-
-### AI Extraction (Backend Function)
-- Receives PDF as base64
-- Uses Lovable AI (Gemini) to parse the text
-- Prompt filters for time >= 18:00 only
-- Returns JSON array of reservations with: guestName, guestCount, dishCount, roomNumber, notes, time
-
-### Auto-Assignment Logic
-Reservations are assigned to tables client-side:
-1. Sort reservations by party size (largest first)
-2. For each reservation, find the smallest available table that fits
-3. 2-person parties go to 2p tables, 4-person to 4p tables, etc.
-4. Staff can manually reassign by tapping a table (future enhancement)
-
-### Translations Added
-- `nav.tablePlan` / `nav.tablePlan` (en: "Table Plan", da: "Bordplan")
-- `tablePlan.title`, `tablePlan.uploadPdf`, `tablePlan.dragDrop`, `tablePlan.processing`, `tablePlan.free`, `tablePlan.guests`, `tablePlan.dishes`, `tablePlan.room`, `tablePlan.notes`, `tablePlan.noReservations`
