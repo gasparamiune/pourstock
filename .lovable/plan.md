@@ -1,31 +1,23 @@
 
 
-# Cluster Occupied Tables Together
+# Fix: Prevent Row 1 from Anchoring the Cluster
 
 ## Problem
-Currently, the assignment logic fills from the bottom up but can scatter guests across non-adjacent rows -- e.g., one table in row 9, the next in row 7, leaving empty rows in between. The restaurant should feel "full in one area" rather than having isolated guests spread out.
+When a large party is assigned to B34 (the only 8-top, row 1), the current `rowDistance` function returns 0 for all other row-1 tables (B8, B18, B28). This makes them more attractive than tables near the bottom, dragging the whole cluster to the back of the restaurant.
+
+## Root Cause
+The `rowDistance` helper uses **minimum distance** to any occupied row. So one outlier table in row 1 makes all row-1 tables distance 0, beating row-9 tables at distance 8.
 
 ## Solution
-Change the assignment priority so that **proximity to already-occupied rows** is the strongest factor (after capacity fit). Instead of simply preferring "any occupied row," the algorithm will prefer the row **closest** to an existing occupied table. This naturally clusters all reservations into a contiguous block starting from the bottom.
-
-### New Sort Priority
-1. **Smallest capacity that fits** (unchanged)
-2. **Closest to an occupied row** -- measured by minimum row distance to any already-occupied row. Tables in an occupied row get distance 0. Tables 1 row away get distance 1, etc. Smaller distance wins.
-3. **Prefer higher row numbers** (bottom-to-top) -- used as tiebreaker and for the very first assignment
-4. **Deprioritize B37** (unchanged)
-
-### Example Behavior
-- First reservation goes to row 9 (bottom-to-top default)
-- Second reservation: row 9 (distance 0) or row 8 (distance 1) preferred over row 3 (distance 6)
-- As rows 8 and 9 fill, row 7 becomes the next closest, keeping everyone clustered
+Replace minimum distance with **average distance** to all occupied rows. This way, if 3 tables are occupied in rows 7-9 and 1 outlier is in row 1, a candidate in row 8 scores ~0.75 average distance while a candidate in row 1 scores ~7.0 average distance. The cluster stays near the majority.
 
 ## Technical Details
 
 ### File Modified
-**`src/components/tableplan/FloorPlan.tsx`** -- Update the candidate sorting inside `assignTablesToReservations()`:
+**`src/components/tableplan/FloorPlan.tsx`** -- Update the `rowDistance` helper inside `assignTablesToReservations()`:
 
 ```typescript
-// Helper: minimum distance from a row to any occupied row
+// Before (minimum distance -- one outlier anchors the cluster)
 const rowDistance = (row: number): number => {
   if (occupiedRows.size === 0) return 0;
   let min = Infinity;
@@ -35,22 +27,20 @@ const rowDistance = (row: number): number => {
   return min;
 };
 
-// Sort candidates
-.sort((a, b) => {
-  // 1. Smallest capacity that fits
-  const capDiff = a.capacity - b.capacity;
-  if (capDiff !== 0) return capDiff;
-  // 2. Closest to occupied rows (cluster together)
-  const distDiff = rowDistance(a.row) - rowDistance(b.row);
-  if (distDiff !== 0) return distDiff;
-  // 3. Prefer higher row numbers (bottom-to-top)
-  if (a.row !== b.row) return b.row - a.row;
-  // 4. Deprioritize B37
-  if (a.id === 'B37') return 1;
-  if (b.id === 'B37') return -1;
-  return 0;
-})
+// After (average distance -- cluster follows the majority)
+const rowDistance = (row: number): number => {
+  if (occupiedRows.size === 0) return 0;
+  let sum = 0;
+  for (const r of occupiedRows) {
+    sum += Math.abs(row - r);
+  }
+  return sum / occupiedRows.size;
+};
 ```
 
-This single change replaces the "prefer any occupied row" logic with distance-based clustering, keeping all occupied tables in a tight group.
+This is a single-line change (swap `min` logic for `sum/size` logic). No other files or sorting logic needs to change -- the rest of the sort priorities (capacity, bottom-to-top tiebreak, B37 last) remain identical.
 
+### Why This Works
+- First few reservations: `occupiedRows` is empty or small, so bottom-to-top preference (step 3) dominates and fills from row 9 upward.
+- Large party goes to B34 (row 1) because it's the only 8-top -- unavoidable.
+- Next 2-person reservation: average distance to rows 9+1 = row 8 scores (1+7)/2=4, row 1 scores (8+0)/2=4, but the row-DESC tiebreaker picks row 8. As more bottom rows fill, the average strongly favors staying near the bottom cluster.
