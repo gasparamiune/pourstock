@@ -73,110 +73,65 @@ export interface Assignments {
   merges: MergeGroup[];
 }
 
-// ---------- AUTO-ASSIGNMENT ALGORITHM ----------
+// ---------- AUTO-ASSIGNMENT ALGORITHM (distance-based clustering) ----------
 
-// Priority lists for deterministic front-to-back filling
-const FOUR_SEAT_PRIORITY = ['B35', 'B1', 'B2', 'B3'];
-const ROUND_SIX_SEAT = ['B4', 'B14', 'B32'];
-const BACK_FOUR_SEAT = ['B5', 'B6', 'B7', 'B8'];
-const TWO_SEAT_PRIORITY = [
-  'B36', 'B37', 'B21', 'B11', 'B22', 'B12', 'B23', 'B13',
-  'B25', 'B15', 'B26', 'B16', 'B27', 'B17', 'B28', 'B18',
-  'B31', 'B33',
-];
-
-function firstAvailable(ids: string[], used: Set<string>): string | null {
-  for (const id of ids) {
-    if (!used.has(id)) return id;
-  }
-  return null;
+function tableById(id: string): TableDef | undefined {
+  return TABLE_LAYOUT.find(t => t.id === id);
 }
 
-export function assignTablesToReservations(reservations: Reservation[]): Assignments {
-  const singles = new Map<string, Reservation>();
-  const merges: MergeGroup[] = [];
-  const usedTables = new Set<string>();
-
-  const sorted = [...reservations].sort((a, b) => b.guestCount - a.guestCount);
-
-  for (const res of sorted) {
-    const gc = res.guestCount;
-
-    if (gc >= 7) {
-      const mg = findMergeGroupFrontToBack(gc, usedTables);
-      if (mg) {
-        mg.reservation = res;
-        merges.push(mg);
-        for (const t of mg.tables) usedTables.add(t.id);
-        continue;
-      }
-      if (usedTables.size >= 20 && !usedTables.has('B34')) {
-        singles.set('B34', res);
-        usedTables.add('B34');
-        continue;
-      }
-    } else if (gc >= 5) {
-      const id = firstAvailable(ROUND_SIX_SEAT, usedTables);
-      if (id) {
-        singles.set(id, res);
-        usedTables.add(id);
-        continue;
-      }
-      const mg = findMergeGroupFrontToBack(gc, usedTables);
-      if (mg) {
-        mg.reservation = res;
-        merges.push(mg);
-        for (const t of mg.tables) usedTables.add(t.id);
-        continue;
-      }
-    } else if (gc >= 3) {
-      const id = firstAvailable(FOUR_SEAT_PRIORITY, usedTables)
-        ?? firstAvailable(ROUND_SIX_SEAT, usedTables)
-        ?? firstAvailable(BACK_FOUR_SEAT, usedTables);
-      if (id) {
-        singles.set(id, res);
-        usedTables.add(id);
-        continue;
-      }
-    } else {
-      const id = firstAvailable(TWO_SEAT_PRIORITY, usedTables);
-      if (id) {
-        singles.set(id, res);
-        usedTables.add(id);
-        continue;
-      }
-    }
-  }
-
-  return { singles, merges };
+function distance(a: TableDef, b: TableDef): number {
+  return Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
 }
 
-function findMergeGroupFrontToBack(
+function findBestTable(
   guestCount: number,
   usedTables: Set<string>,
-): MergeGroup | null {
-  const groups: MergeGroup[] = [];
+  clusterCenter: TableDef | null,
+  reservationType?: string,
+): string | null {
+  const candidates = TABLE_LAYOUT
+    .filter(t => !usedTables.has(t.id) && t.capacity >= guestCount && t.id !== 'B34')
+    .sort((a, b) => {
+      // Prefer smallest capacity that fits
+      const capDiff = a.capacity - b.capacity;
+      if (capDiff !== 0) return capDiff;
+      // If cluster center exists, prefer closer tables
+      if (clusterCenter) {
+        return distance(a, clusterCenter) - distance(b, clusterCenter);
+      }
+      // Default: front of restaurant first (higher row number)
+      return b.row - a.row;
+    });
+  return candidates[0]?.id ?? null;
+}
 
-  for (let row = 9; row >= 1; row--) {
-    const available = TABLE_LAYOUT
-      .filter(t => t.row === row && !usedTables.has(t.id) && t.shape !== 'round')
+function findMergeGroup(
+  guestCount: number,
+  usedTables: Set<string>,
+  clusterCenter: TableDef | null,
+): MergeGroup | null {
+  const candidates: MergeGroup[] = [];
+
+  for (let row = 1; row <= 9; row++) {
+    const tablesInRow = TABLE_LAYOUT
+      .filter(t => t.row === row && !usedTables.has(t.id) && t.shape !== 'round' && t.id !== 'B34')
       .sort((a, b) => a.col - b.col);
 
     for (let size = 2; size <= 4; size++) {
-      for (let i = 0; i <= available.length - size; i++) {
+      for (let i = 0; i <= tablesInRow.length - size; i++) {
         let adjacent = true;
         for (let j = 0; j < size - 1; j++) {
-          if (available[i + j + 1].col - available[i + j].col !== 1) {
+          if (tablesInRow[i + j + 1].col - tablesInRow[i + j].col !== 1) {
             adjacent = false;
             break;
           }
         }
         if (!adjacent) continue;
 
-        const combo = available.slice(i, i + size);
+        const combo = tablesInRow.slice(i, i + size);
         const cap = combo.reduce((s, t) => s + t.capacity, 0);
         if (cap >= guestCount) {
-          groups.push({
+          candidates.push({
             tables: combo,
             combinedCapacity: cap,
             reservation: null,
@@ -189,15 +144,76 @@ function findMergeGroupFrontToBack(
     }
   }
 
-  if (groups.length === 0) return null;
+  if (candidates.length === 0) return null;
 
-  groups.sort((a, b) => {
+  candidates.sort((a, b) => {
+    // Smallest capacity that fits
     const capDiff = a.combinedCapacity - b.combinedCapacity;
     if (capDiff !== 0) return capDiff;
+    // Closest to cluster center
+    if (clusterCenter) {
+      const distA = Math.min(...a.tables.map(t => distance(t, clusterCenter)));
+      const distB = Math.min(...b.tables.map(t => distance(t, clusterCenter)));
+      return distA - distB;
+    }
+    // Front first
     return b.row - a.row;
   });
 
-  return groups[0];
+  return candidates[0];
+}
+
+export function assignTablesToReservations(reservations: Reservation[]): Assignments {
+  const singles = new Map<string, Reservation>();
+  const merges: MergeGroup[] = [];
+  const usedTables = new Set<string>();
+
+  // Sort by guest count descending so big groups get best tables
+  const sorted = [...reservations].sort((a, b) => b.guestCount - a.guestCount);
+
+  // Group by reservation type for clustering
+  const typeGroups = new Map<string, Reservation[]>();
+  for (const res of sorted) {
+    const type = res.reservationType || `${res.dishCount}-ret`;
+    if (!typeGroups.has(type)) typeGroups.set(type, []);
+    typeGroups.get(type)!.push(res);
+  }
+
+  // Process type groups: biggest groups first
+  const orderedTypes = [...typeGroups.entries()].sort((a, b) => {
+    const maxA = Math.max(...a[1].map(r => r.guestCount));
+    const maxB = Math.max(...b[1].map(r => r.guestCount));
+    return maxB - maxA;
+  });
+
+  for (const [, group] of orderedTypes) {
+    let clusterCenter: TableDef | null = null;
+
+    for (const res of group) {
+      const gc = res.guestCount;
+
+      // Try single table first
+      const tableId = findBestTable(gc, usedTables, clusterCenter, res.reservationType);
+      if (tableId) {
+        singles.set(tableId, res);
+        usedTables.add(tableId);
+        if (!clusterCenter) clusterCenter = tableById(tableId)!;
+        continue;
+      }
+
+      // Try merge
+      const mg = findMergeGroup(gc, usedTables, clusterCenter);
+      if (mg) {
+        mg.reservation = res;
+        merges.push(mg);
+        for (const t of mg.tables) usedTables.add(t.id);
+        if (!clusterCenter) clusterCenter = mg.tables[0];
+        continue;
+      }
+    }
+  }
+
+  return { singles, merges };
 }
 
 // ---------- FLOOR PLAN COMPONENT ----------

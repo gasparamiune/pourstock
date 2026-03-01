@@ -206,9 +206,9 @@ export function TableCard({
           {/* Notes badge */}
           {hasNotes && (
             <div className="flex items-start gap-1 mt-auto">
-              <div className="flex items-center gap-1 text-xs bg-destructive/20 text-destructive px-2 py-1 rounded-md leading-tight animate-pulse">
-                <AlertTriangle className="h-3 w-3 shrink-0" />
-                <span className="line-clamp-3">{reservation!.notes}</span>
+              <div className="flex items-start gap-1.5 text-[11px] bg-destructive/15 text-destructive border border-destructive/25 px-2.5 py-1.5 rounded-lg leading-snug animate-pulse">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <span className="line-clamp-4 font-medium">{reservation!.notes}</span>
               </div>
             </div>
           )}
