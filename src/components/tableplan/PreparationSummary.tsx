@@ -13,6 +13,7 @@ export function PreparationSummary({ reservations }: PreparationSummaryProps) {
 
   const totalGuests = reservations.reduce((s, r) => s + r.guestCount, 0);
   const coffeeTeaCount = reservations.filter(r => r.coffeeTeaSweet).reduce((s, r) => s + r.guestCount, 0);
+  const coffeeOnlyCount = reservations.filter(r => r.coffeeOnly && !r.coffeeTeaSweet).reduce((s, r) => s + r.guestCount, 0);
 
   // Calculate cutlery totals
   let totalForks = 0;
@@ -84,15 +85,28 @@ export function PreparationSummary({ reservations }: PreparationSummaryProps) {
             </div>
 
             {/* Coffee/tea */}
-            {coffeeTeaCount > 0 && (
-              <div className="pt-2 border-t border-border mt-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2">
-                    <Coffee className="h-4 w-4 text-amber-400" />
-                    {t('prep.coffeeTea')}
-                  </span>
-                  <span className="font-semibold tabular-nums">× {coffeeTeaCount}</span>
-                </div>
+            {(coffeeOnlyCount > 0 || coffeeTeaCount > 0) && (
+              <div className="pt-2 border-t border-border mt-2 space-y-1.5">
+                {coffeeOnlyCount > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <Coffee className="h-4 w-4 text-amber-400" />
+                      {t('prep.coffeeOnly')}
+                    </span>
+                    <span className="font-semibold tabular-nums">× {coffeeOnlyCount}</span>
+                  </div>
+                )}
+                {coffeeTeaCount > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <Coffee className="h-4 w-4 text-amber-400" />
+                      <span>+</span>
+                      <span>🍪</span>
+                      {t('prep.coffeeTea')}
+                    </span>
+                    <span className="font-semibold tabular-nums">× {coffeeTeaCount}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>

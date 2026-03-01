@@ -51,10 +51,13 @@ IMPORTANT RULES FOR NOTES:
 - Common notes include: allergies (laktoseintolerant, glutenfri), dietary restrictions (gravid, vegetar), included services (velkomstdrink inkl., kaffe inkl.).
 
 KAFFE/TE + SØDT SECTION:
-- After the restaurant reservation section, there may be a "Kaffe/te + sødt" or similar section.
-- Extract these entries and match them to existing reservations by room number.
-- If a reservation's room number appears in the kaffe/te section, set coffeeTeaSweet to true for that reservation.
-- If no match is found, still note it.
+- After the restaurant reservation section, there may be a "Kaffe/te" section with entries like "Kaffe/te, 1 kop" or "Kaffe/te Risskov".
+- Match these entries to existing reservations by room number.
+- TWO FORMATS EXIST:
+  1. "Kaffe/te, 1 kop" (or similar simple coffee order) = coffee ONLY. Set coffeeOnly=true, coffeeTeaSweet=false.
+  2. "Kaffe/te Risskov" followed by a line "med sødt (stk. chokolade eller småkage)" = coffee WITH sweet. Set coffeeOnly=false, coffeeTeaSweet=true.
+- If the entry has "med sødt" or "chokolade" or "småkage" on the NEXT line, it means coffee+sweet (coffeeTeaSweet=true).
+- If no "med sødt" line follows, it's coffee only (coffeeOnly=true).
 
 For each reservation, extract:
 - time: the reservation time (e.g. "18:00")
@@ -69,7 +72,8 @@ For each reservation, extract:
 - guestName: guest name if available, otherwise empty string
 - roomNumber: room number if shown (e.g. "216"), otherwise empty string
 - notes: any special notes like allergies, intolerances, dietary requirements, included services (e.g. "laktoseintolerant", "glutenfri", "velkomstdrink inkl.", "kaffe inkl."). Empty string if none.
-- coffeeTeaSweet: boolean, true if this reservation has kaffe/te + sødt included
+- coffeeOnly: boolean, true if this reservation has ONLY coffee/tea (no sødt)
+- coffeeTeaSweet: boolean, true if this reservation has coffee/tea WITH sødt/chokolade/småkage
 
 Return the data as a JSON array. Do not include any markdown formatting, just pure JSON.`,
             },
@@ -111,6 +115,7 @@ Return the data as a JSON array. Do not include any markdown formatting, just pu
                           guestName: { type: "string" },
                           roomNumber: { type: "string" },
                           notes: { type: "string" },
+                          coffeeOnly: { type: "boolean" },
                           coffeeTeaSweet: { type: "boolean" },
                         },
                         required: [
@@ -121,6 +126,7 @@ Return the data as a JSON array. Do not include any markdown formatting, just pu
                           "guestName",
                           "roomNumber",
                           "notes",
+                          "coffeeOnly",
                           "coffeeTeaSweet",
                         ],
                         additionalProperties: false,

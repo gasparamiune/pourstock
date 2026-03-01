@@ -254,6 +254,10 @@ const translations: Record<Language, Record<string, string>> = {
     'prep.whiteWine': 'White wine glasses',
     'prep.redWine': 'Red wine glasses',
     'prep.coffeeTea': 'Coffee/tea + sweet',
+    'prep.coffeeOnly': 'Coffee/tea',
+    'tablePlan.print': 'Print',
+    'tablePlan.printEmpty': 'Print empty plan',
+    'tablePlan.printWithRes': 'Print with reservations',
 
     // Language
     'language.english': 'English',
@@ -504,6 +508,10 @@ const translations: Record<Language, Record<string, string>> = {
     'prep.whiteWine': 'Hvidvinsglas',
     'prep.redWine': 'Rødvinsglas',
     'prep.coffeeTea': 'Kaffe/te + sødt',
+    'prep.coffeeOnly': 'Kaffe/te',
+    'tablePlan.print': 'Udskriv',
+    'tablePlan.printEmpty': 'Udskriv tom plan',
+    'tablePlan.printWithRes': 'Udskriv med reservationer',
 
     // Language
     'language.english': 'English',
