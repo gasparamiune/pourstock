@@ -9,7 +9,8 @@ import type { Reservation } from '@/components/tableplan/TableCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, Save, Loader2, FolderOpen } from 'lucide-react';
+import { RotateCcw, Save, Loader2, FolderOpen, Printer } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 
 function stripB(id: string) { return id.replace('B', ''); }
@@ -39,7 +40,6 @@ export default function TablePlan() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [savedPlans, setSavedPlans] = useState<any[]>([]);
-  const [showSavedPlans, setShowSavedPlans] = useState(false);
   const [undoMap, setUndoMap] = useState<Map<string, Reservation>>(new Map());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const undoTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -125,7 +125,6 @@ export default function TablePlan() {
   const handleLoadPlan = (plan: any) => {
     const loaded = deserializeAssignments(plan.assignments_json);
     setAssignments(loaded);
-    setShowSavedPlans(false);
     toast({ title: t('tablePlan.saved'), description: plan.name });
   };
 
@@ -483,6 +482,89 @@ export default function TablePlan() {
   const hasReservations = assignments !== null;
   const reservationCount = allReservations.length;
 
+  // Print handler
+  const handlePrint = useCallback((empty: boolean) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const tables = TABLE_LAYOUT;
+    const rows = Array.from({ length: 9 }, (_, i) => i + 1);
+
+    const getRes = (tableId: string): Reservation | undefined => {
+      if (empty) return undefined;
+      if (!assignments) return undefined;
+      if (assignments.singles.has(tableId)) return assignments.singles.get(tableId);
+      for (const mg of assignments.merges) {
+        if (mg.tables[0].id === tableId && mg.reservation) return mg.reservation;
+      }
+      return undefined;
+    };
+
+    const mergedIds = new Set<string>();
+    const mergeMap = new Map<string, MergeGroup>();
+    if (assignments) {
+      for (const mg of assignments.merges) {
+        mergeMap.set(mg.tables[0].id, mg);
+        mg.tables.forEach(t => mergedIds.add(t.id));
+      }
+    }
+
+    let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Bordplan</title><style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      h1 { font-size: 18px; margin-bottom: 4px; }
+      .subtitle { color: #666; font-size: 12px; margin-bottom: 16px; }
+      table { border-collapse: collapse; width: 100%; }
+      td { border: 1px solid #ccc; padding: 8px; vertical-align: top; min-width: 120px; height: 80px; font-size: 11px; }
+      .table-num { font-weight: bold; font-size: 13px; }
+      .free { color: #aaa; text-align: center; vertical-align: middle; }
+      .guest-info { margin-top: 4px; }
+      .notes { color: #c00; font-size: 10px; margin-top: 2px; }
+      .coffee { color: #b45309; font-size: 10px; }
+      @media print { body { margin: 10px; } }
+    </style></head><body>`;
+    html += `<h1>Bordplan — ${new Date().toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h1>`;
+    html += `<div class="subtitle">${empty ? 'Tom bordplan' : `${reservationCount} reservationer`}</div>`;
+    html += '<table>';
+
+    for (const row of rows) {
+      html += '<tr>';
+      const tablesInRow = tables.filter(t => t.row === row).sort((a, b) => a.col - b.col);
+      let col = 1;
+      for (const tbl of tablesInRow) {
+        while (col < tbl.col) { html += '<td></td>'; col++; }
+        if (mergedIds.has(tbl.id) && !mergeMap.has(tbl.id)) { col++; continue; }
+        const mg = mergeMap.get(tbl.id);
+        const colspan = mg ? mg.colSpan : 1;
+        const res = getRes(tbl.id);
+        const label = mg ? mg.tables.map(t => stripB(t.id)).join('+') : stripB(tbl.id);
+
+        html += `<td colspan="${colspan}">`;
+        html += `<div class="table-num">${label} <span style="font-weight:normal;color:#888">(${mg ? mg.combinedCapacity : tbl.capacity}p)</span></div>`;
+        if (res) {
+          html += `<div class="guest-info">`;
+          html += `<div>👥 ${res.guestCount} · ${res.reservationType || '3-ret'}</div>`;
+          if (res.guestName) html += `<div>${res.guestName}</div>`;
+          if (res.roomNumber) html += `<div>Vær. ${res.roomNumber}</div>`;
+          if (res.coffeeOnly) html += `<div class="coffee">☕ Kaffe/te</div>`;
+          if (res.coffeeTeaSweet) html += `<div class="coffee">☕+🍪 Kaffe/te + sødt</div>`;
+          if (res.notes) html += `<div class="notes">⚠ ${res.notes}</div>`;
+          html += `</div>`;
+        } else {
+          html += `<div class="free">—</div>`;
+        }
+        html += '</td>';
+        col += colspan;
+      }
+      while (col <= 4) { html += '<td></td>'; col++; }
+      html += '</tr>';
+    }
+
+    html += '</table></body></html>';
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.print();
+  }, [assignments, allReservations.length]);
+
   // Dialog helpers
   const addDialogLabel = addDialogTable ? (() => {
     const mg = findMergeGroupForTable(addDialogTable);
@@ -523,52 +605,65 @@ export default function TablePlan() {
             </span>
           )}
           {hasReservations && (
-            <Button variant="outline" onClick={handleReset}>
-              <RotateCcw className="h-4 w-4 mr-2" />
-              {t('tablePlan.newUpload')}
-            </Button>
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Printer className="h-4 w-4 mr-2" />
+                    {t('tablePlan.print')}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handlePrint(false)}>
+                    {t('tablePlan.printWithRes')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handlePrint(true)}>
+                    {t('tablePlan.printEmpty')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button variant="outline" onClick={handleReset}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                {t('tablePlan.newUpload')}
+              </Button>
+            </>
           )}
         </div>
       </div>
 
       {!hasReservations ? (
-        <div className="space-y-6">
-          {/* Saved plans */}
+        <div className="space-y-4">
+          <PdfUploader onUpload={handleUpload} isProcessing={isProcessing} />
+
+          {/* Saved plans - always visible scrollable list */}
           {savedPlans.length > 0 && (
-            <div className="space-y-3">
-              <button
-                onClick={() => setShowSavedPlans(!showSavedPlans)}
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <FolderOpen className="h-4 w-4" />
                 {t('tablePlan.savedPlans')} ({savedPlans.length})
-              </button>
-              {showSavedPlans && (
-                <div className="grid gap-2">
-                  {savedPlans.map(plan => (
-                    <div key={plan.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
-                      <button
-                        onClick={() => handleLoadPlan(plan)}
-                        className="text-sm font-medium text-foreground hover:text-primary transition-colors text-left"
-                      >
-                        {plan.name || plan.plan_date}
-                      </button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeletePlan(plan.id)}
-                        className="text-destructive hover:text-destructive h-7 w-7 p-0"
-                      >
-                        ×
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              </div>
+              <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                {savedPlans.map(plan => (
+                  <div key={plan.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors">
+                    <button
+                      onClick={() => handleLoadPlan(plan)}
+                      className="text-sm font-medium text-foreground hover:text-primary transition-colors text-left truncate flex-1"
+                    >
+                      {plan.name || plan.plan_date}
+                    </button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeletePlan(plan.id)}
+                      className="text-destructive hover:text-destructive h-7 w-7 p-0 shrink-0"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-
-          <PdfUploader onUpload={handleUpload} isProcessing={isProcessing} />
         </div>
       ) : reservationCount === 0 && assignments.merges.length === 0 ? (
         <div className="space-y-6">

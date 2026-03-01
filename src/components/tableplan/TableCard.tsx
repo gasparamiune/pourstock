@@ -12,6 +12,7 @@ export interface Reservation {
   guestName: string;
   roomNumber: string;
   notes: string;
+  coffeeOnly?: boolean;
   coffeeTeaSweet?: boolean;
   arrivedAt?: string;
   clearedAt?: string;
@@ -176,11 +177,15 @@ export function TableCard({
               <UtensilsCrossed className="h-3 w-3" />
               <span>{getReservationTypeLabel(type!)}</span>
             </div>
-            {reservation!.coffeeTeaSweet && (
-              <span title="Kaffe/te + sødt" className="flex items-center gap-0.5 animate-pulse">
+            {(reservation!.coffeeOnly || reservation!.coffeeTeaSweet) && (
+              <span title={reservation!.coffeeTeaSweet ? "Kaffe/te + sødt" : "Kaffe/te"} className="flex items-center gap-0.5 animate-pulse">
                 <Coffee className="h-3.5 w-3.5 text-amber-400" />
-                <span className="text-amber-400 text-[10px] font-bold">+</span>
-                <span className="text-amber-400 text-sm">🍪</span>
+                {reservation!.coffeeTeaSweet && (
+                  <>
+                    <span className="text-amber-400 text-[10px] font-bold">+</span>
+                    <span className="text-amber-400 text-sm">🍪</span>
+                  </>
+                )}
               </span>
             )}
           </div>
