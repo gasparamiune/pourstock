@@ -43,6 +43,7 @@ export default function TablePlan() {
   const [undoMap, setUndoMap] = useState<Map<string, Reservation>>(new Map());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const undoTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const lastSaveRef = useRef<number>(0);
 
   // Dialog state
   const [addDialogTable, setAddDialogTable] = useState<string | null>(null);
@@ -56,6 +57,46 @@ export default function TablePlan() {
     loadSavedPlans();
   }, []);
 
+  // Auto-load today's plan on mount
+  useEffect(() => {
+    const loadToday = async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('table_plans')
+        .select('*')
+        .eq('plan_date', today)
+        .maybeSingle();
+      if (data) {
+        setAssignments(deserializeAssignments(data.assignments_json));
+      }
+    };
+    loadToday();
+  }, []);
+
+  // Realtime subscription for table_plans
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const channel = supabase
+      .channel('table-plan-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'table_plans', filter: `plan_date=eq.${today}` },
+        (payload) => {
+          // Skip echo: ignore events within 2s of our own save
+          if (Date.now() - lastSaveRef.current < 2000) return;
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+            const newData = (payload as any).new;
+            if (newData?.assignments_json) {
+              setAssignments(deserializeAssignments(newData.assignments_json));
+            }
+          }
+          loadSavedPlans();
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const loadSavedPlans = async () => {
     const { data } = await supabase
       .from('table_plans')
@@ -65,7 +106,7 @@ export default function TablePlan() {
     if (data) setSavedPlans(data);
   };
 
-  // Auto-save with debounce
+  // Auto-save with 500ms debounce for near-instant sync
   const triggerAutoSave = useCallback((newAssignments: Assignments) => {
     if (!autoSaveEnabled || !user) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -74,6 +115,7 @@ export default function TablePlan() {
       setSaveStatus('saving');
       const today = new Date().toISOString().split('T')[0];
       const name = `${new Date().toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })} - Aften`;
+      lastSaveRef.current = Date.now();
       const { error } = await supabase.from('table_plans').upsert(
         {
           plan_date: today,
@@ -81,11 +123,11 @@ export default function TablePlan() {
           name,
           assignments_json: serializeAssignments(newAssignments) as any,
         } as any,
-        { onConflict: 'plan_date,created_by' }
+        { onConflict: 'plan_date' }
       );
       setSaveStatus(error ? 'idle' : 'saved');
       if (!error) loadSavedPlans();
-    }, 2000);
+    }, 500);
   }, [autoSaveEnabled, user]);
 
   // Wrapper to update assignments + trigger auto-save

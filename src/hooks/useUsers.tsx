@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { useCallback } from 'react';
 
 export interface UserProfile {
   id: string;
@@ -26,6 +28,12 @@ async function invokeManageUsers(action: string, params: Record<string, any>) {
 export function useUsers() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const invalidateUsers = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+  }, [queryClient]);
+
+  useRealtimeSubscription(['profiles', 'user_roles'], invalidateUsers);
 
   const usersQuery = useQuery({
     queryKey: ['users'],

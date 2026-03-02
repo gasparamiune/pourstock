@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 import { BeverageCategory } from '@/types/inventory';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 export type Product = Tables<'products'>;
 export type Location = Tables<'locations'>;
@@ -46,6 +47,8 @@ export function useProducts() {
     fetchProducts();
   }, [fetchProducts]);
 
+  useRealtimeSubscription('products', fetchProducts);
+
   return { products, isLoading, error, refetch: fetchProducts };
 }
 
@@ -73,6 +76,8 @@ export function useLocations() {
   useEffect(() => {
     fetchLocations();
   }, [fetchLocations]);
+
+  useRealtimeSubscription('locations', fetchLocations);
 
   return { locations, isLoading, error, refetch: fetchLocations };
 }
@@ -104,6 +109,8 @@ export function useStockLevels(locationId?: string) {
     fetchStockLevels();
   }, [fetchStockLevels]);
 
+  useRealtimeSubscription('stock_levels', fetchStockLevels);
+
   return { stockLevels, isLoading, error, refetch: fetchStockLevels };
 }
 
@@ -131,6 +138,8 @@ export function useStockMovements(limit: number = 10) {
   useEffect(() => {
     fetchMovements();
   }, [fetchMovements]);
+
+  useRealtimeSubscription('stock_movements', fetchMovements);
 
   return { movements, isLoading, error, refetch: fetchMovements };
 }
@@ -194,14 +203,12 @@ export function useDashboardData() {
       }
     });
 
-    // Sort by urgency (lowest stock ratio first)
     lowStockAlerts.sort((a, b) => {
       const aRatio = a.currentStock / a.reorderThreshold;
       const bRatio = b.currentStock / b.reorderThreshold;
       return aRatio - bRatio;
     });
 
-    // Calculate stock by category
     const stockByCategory: StockByCategory = {};
     products.forEach((product) => {
       if (!stockByCategory[product.category]) {
@@ -232,6 +239,8 @@ export function useDashboardData() {
     fetchData();
   }, [fetchData]);
 
+  useRealtimeSubscription(['products', 'stock_levels', 'stock_movements'], fetchData);
+
   return { ...data, isLoading, error, refetch: fetchData };
 }
 
@@ -256,8 +265,6 @@ export function useProductSearch(query: string) {
       
       const lowerQuery = query.toLowerCase();
       
-      // Fetch products, stock levels, and locations in parallel
-      // Note: category is an enum type and cannot use ilike, so we search name, subtype, and vendor only
       const [productsRes, stockLevelsRes, locationsRes] = await Promise.all([
         supabase
           .from('products')
