@@ -14,7 +14,8 @@ import {
   User,
   LogOut,
   Upload,
-  LayoutGrid
+  LayoutGrid,
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,7 @@ const navItems: NavItem[] = [
   { path: '/table-plan', labelKey: 'nav.tablePlan', icon: LayoutGrid },
   { path: '/orders', labelKey: 'nav.orders', icon: ShoppingCart },
   { path: '/reports', labelKey: 'nav.reports', icon: BarChart3 },
+  { path: '/user-management', labelKey: 'nav.userManagement', icon: Users },
   { path: '/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 
@@ -136,8 +138,8 @@ export function AppShell({ children }: AppShellProps) {
           <nav className="flex-1 p-4 space-y-1">
             {navItems
               .filter((item) => {
-                // Hide Settings from non-admins
                 if (item.path === '/settings') return isAdmin;
+                if (item.path === '/user-management') return isManager;
                 return true;
               })
               .map((item) => {

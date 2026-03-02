@@ -16,6 +16,7 @@ import Orders from "./pages/Orders";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import TablePlan from "./pages/TablePlan";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
                         <Route path="/table-plan" element={<TablePlan />} />
                         <Route path="/orders" element={<Orders />} />
                         <Route path="/reports" element={<Reports />} />
+                        <Route path="/user-management" element={<ProtectedRoute requireManager={true}><UserManagement /></ProtectedRoute>} />
                         <Route path="/settings" element={<ProtectedRoute requireAdmin={true}><Settings /></ProtectedRoute>} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
