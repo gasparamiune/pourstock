@@ -2,3 +2,6 @@ project_id = "mtbfvklhymahyyjmlgrq"
 
 [functions.parse-table-plan]
 verify_jwt = false
+
+[functions.manage-users]
+verify_jwt = false

@@ -262,6 +262,27 @@ const translations: Record<Language, Record<string, string>> = {
     // Language
     'language.english': 'English',
     'language.danish': 'Dansk',
+
+    // User Management
+    'nav.userManagement': 'User Management',
+    'users.title': 'User Management',
+    'users.description': 'Manage staff accounts, roles, and permissions',
+    'users.addUser': 'Add User',
+    'users.editUser': 'Edit User',
+    'users.fullName': 'Full Name',
+    'users.email': 'Email',
+    'users.phone': 'Phone',
+    'users.role': 'Role',
+    'users.status': 'Status',
+    'users.actions': 'Actions',
+    'users.approved': 'Approved',
+    'users.pending': 'Pending',
+    'users.tempPassword': 'Temporary Password',
+    'users.resetPassword': 'Reset Password',
+    'users.confirmDelete': 'Delete User',
+    'users.confirmDeleteDesc': 'Are you sure you want to permanently delete',
+    'users.resetLinkGenerated': 'Password Reset Link',
+    'users.copyLink': 'Copy Link',
   },
   da: {
     // Navigation
@@ -516,6 +537,27 @@ const translations: Record<Language, Record<string, string>> = {
     // Language
     'language.english': 'English',
     'language.danish': 'Dansk',
+
+    // User Management
+    'nav.userManagement': 'Brugeradministration',
+    'users.title': 'Brugeradministration',
+    'users.description': 'Administrer medarbejderkonti, roller og tilladelser',
+    'users.addUser': 'Tilføj bruger',
+    'users.editUser': 'Rediger bruger',
+    'users.fullName': 'Fulde navn',
+    'users.email': 'Email',
+    'users.phone': 'Telefon',
+    'users.role': 'Rolle',
+    'users.status': 'Status',
+    'users.actions': 'Handlinger',
+    'users.approved': 'Godkendt',
+    'users.pending': 'Afventer',
+    'users.tempPassword': 'Midlertidigt kodeord',
+    'users.resetPassword': 'Nulstil kodeord',
+    'users.confirmDelete': 'Slet bruger',
+    'users.confirmDeleteDesc': 'Er du sikker på at du vil slette permanent',
+    'users.resetLinkGenerated': 'Nulstil kodeord link',
+    'users.copyLink': 'Kopier link',
   },
 };
 
