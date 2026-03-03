@@ -611,7 +611,6 @@ export default function TablePlan() {
       }
     }
 
-    // Color map for reservation types
     const typeColors: Record<string, string> = {
       '2-ret': '#0ea5e9',
       '3-ret': '#f59e0b',
@@ -623,42 +622,51 @@ export default function TablePlan() {
 
     let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Bordplan</title><style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background: white; color: #1a1a1a; }
-      h1 { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
-      .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
-      .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-      .cell {
-        border: 1.5px solid #e2e2e2;
-        border-radius: 10px;
-        padding: 10px;
-        min-height: 90px;
-        position: relative;
+      @page { size: A4 landscape; margin: 8mm; }
+      body { font-family: 'Segoe UI', Arial, sans-serif; background: white; color: #1a1a1a; width: 100%; }
+      h1 { font-size: 16px; font-weight: 700; margin-bottom: 1px; }
+      .subtitle { color: #666; font-size: 10px; margin-bottom: 6px; }
+      table.grid { width: 100%; border-collapse: separate; border-spacing: 4px; table-layout: fixed; }
+      table.grid td {
+        border: 1.2px solid #d4d4d4;
+        border-radius: 6px;
+        padding: 4px 5px;
+        vertical-align: top;
+        height: 62px;
+        overflow: hidden;
         background: white;
+        font-size: 10px;
       }
-      .cell.round { border-radius: 50%; min-height: 110px; min-width: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-      .cell.occupied { border-left: 5px solid #ccc; }
-      .cell.buff { border-left: 5px dashed #f43f5e; }
-      .cell.empty-cell { border: 1.5px dashed #e2e2e2; }
-      .table-num { font-size: 18px; font-weight: 800; color: #1a1a1a; }
-      .cap { font-size: 11px; color: #999; margin-left: 4px; }
-      .guest-line { font-size: 13px; margin-top: 5px; }
-      .type-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; color: white; margin-left: 6px; }
-      .room-line { font-size: 12px; color: #555; margin-top: 2px; }
-      .notes { color: #c00; font-size: 11px; margin-top: 3px; font-weight: 500; }
-      .coffee { color: #b45309; font-size: 11px; margin-top: 2px; }
-      .free-label { color: #bbb; font-size: 13px; text-align: center; margin-top: 20px; }
-      .spacer { min-height: 90px; }
-      @media print { body { margin: 10px; } @page { size: landscape; margin: 10mm; } }
+      table.grid td.round {
+        border-radius: 50%;
+        text-align: center;
+        vertical-align: middle;
+      }
+      table.grid td.occupied { border-left: 4px solid #ccc; }
+      table.grid td.buff { border-left: 4px dashed #f43f5e; }
+      table.grid td.empty-cell { border: 1.2px dashed #e2e2e2; }
+      table.grid td.spacer { border: none; }
+      .tnum { font-size: 15px; font-weight: 800; }
+      .cap { font-size: 9px; color: #999; margin-left: 2px; }
+      .gl { font-size: 10px; margin-top: 2px; line-height: 1.2; }
+      .tb { display: inline-block; font-size: 8px; font-weight: 700; padding: 0 4px; border-radius: 3px; color: white; margin-left: 3px; vertical-align: middle; }
+      .rl { font-size: 9px; color: #555; }
+      .notes { color: #c00; font-size: 9px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+      .coffee { color: #b45309; font-size: 9px; }
+      .free { color: #ccc; font-size: 11px; text-align: center; padding-top: 14px; }
+      @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
     </style></head><body>`;
+
     html += `<h1>Bordplan — ${new Date().toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h1>`;
     html += `<div class="subtitle">${empty ? 'Tom bordplan' : `${reservationCount} reservationer · ${allReservations.reduce((s, r) => s + r.guestCount, 0)} gæster`}</div>`;
-    html += '<div class="grid">';
+    html += '<table class="grid">';
 
     for (const row of rows) {
+      html += '<tr>';
       for (let col = 1; col <= 4; col++) {
         const table = tables.find(t => t.row === row && t.col === col);
         if (!table) {
-          html += '<div class="spacer"></div>';
+          html += '<td class="spacer"></td>';
           continue;
         }
 
@@ -674,33 +682,30 @@ export default function TablePlan() {
         const isBuff = res?.reservationType === 'buff';
         const typeColor = res ? typeColors[res.reservationType || '3-ret'] || '#f59e0b' : '#ccc';
 
-        const cellStyle = colspan > 1 ? `grid-column: span ${colspan};` : '';
-        const borderStyle = res ? (isBuff ? '' : `border-left-color: ${typeColor};`) : '';
+        const borderStyle = res && !isBuff ? `border-left-color: ${typeColor};` : '';
         const classes = [
-          'cell',
           isRound ? 'round' : '',
           res ? (isBuff ? 'buff occupied' : 'occupied') : 'empty-cell',
         ].filter(Boolean).join(' ');
 
-        html += `<div class="${classes}" style="${cellStyle} ${borderStyle}">`;
-        html += `<div><span class="table-num">${label}</span><span class="cap">${mg ? mg.combinedCapacity : table.capacity}p</span></div>`;
+        html += `<td class="${classes}" colspan="${colspan}" style="${borderStyle}">`;
+        html += `<span class="tnum">${label}</span><span class="cap">${mg ? mg.combinedCapacity : table.capacity}p</span>`;
         if (res) {
-          html += `<div class="guest-line">👥 ${res.guestCount}`;
-          html += `<span class="type-badge" style="background:${typeColor}">${res.reservationType || '3-ret'}</span>`;
-          html += `</div>`;
-          if (res.guestName) html += `<div class="guest-line" style="font-weight:600">${res.guestName}</div>`;
-          if (res.roomNumber) html += `<div class="room-line">🚪 Vær. ${res.roomNumber}</div>`;
-          if (res.coffeeOnly) html += `<div class="coffee">☕ Kaffe/te</div>`;
-          if (res.coffeeTeaSweet) html += `<div class="coffee">☕+🍪 Kaffe/te + sødt</div>`;
-          if (res.notes) html += `<div class="notes">⚠ ${res.notes}</div>`;
+          html += `<div class="gl">👥${res.guestCount}<span class="tb" style="background:${typeColor}">${res.reservationType || '3-ret'}</span></div>`;
+          if (res.guestName) html += `<div class="gl" style="font-weight:700">${res.guestName}</div>`;
+          if (res.roomNumber) html += `<div class="rl">Vær.${res.roomNumber}</div>`;
+          if (res.coffeeOnly) html += `<div class="coffee">☕</div>`;
+          if (res.coffeeTeaSweet) html += `<div class="coffee">☕+🍪</div>`;
+          if (res.notes) html += `<div class="notes">⚠${res.notes}</div>`;
         } else {
-          html += `<div class="free-label">—</div>`;
+          html += `<div class="free">—</div>`;
         }
-        html += '</div>';
+        html += '</td>';
       }
+      html += '</tr>';
     }
 
-    html += '</div></body></html>';
+    html += '</table></body></html>';
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.print();
