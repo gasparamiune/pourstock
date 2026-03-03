@@ -17,9 +17,10 @@ interface AddReservationDialogProps {
   tableLabel: string;
   tableCapacity?: number;
   onAdd: (reservation: Reservation) => void;
+  buffOnly?: boolean;
 }
 
-export function AddReservationDialog({ open, onOpenChange, tableLabel, tableCapacity = 2, onAdd }: AddReservationDialogProps) {
+export function AddReservationDialog({ open, onOpenChange, tableLabel, tableCapacity = 2, onAdd, buffOnly = false }: AddReservationDialogProps) {
   const { t } = useLanguage();
   const [guestName, setGuestName] = useState('');
   const [guestCount, setGuestCount] = useState('2');
@@ -88,64 +89,72 @@ export function AddReservationDialog({ open, onOpenChange, tableLabel, tableCapa
           {t('tablePlan.markAsBuff')} ({tableCapacity}p)
         </Button>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">eller</span>
-          </div>
-        </div>
-
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label>{t('tablePlan.guestName')}</Label>
-            <Input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder={t('tablePlan.guestName')} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label>{t('tablePlan.guestCount')}</Label>
-              <Input type="number" min="1" max="20" value={guestCount} onChange={e => setGuestCount(e.target.value)} />
+        {buffOnly ? (
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
+          </DialogFooter>
+        ) : (
+          <>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">eller</span>
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label>{t('tablePlan.roomNumber')}</Label>
-              <Input value={roomNumber} onChange={e => setRoomNumber(e.target.value)} placeholder="102" />
+
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label>{t('tablePlan.guestName')}</Label>
+                <Input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder={t('tablePlan.guestName')} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>{t('tablePlan.guestCount')}</Label>
+                  <Input type="number" min="1" max="20" value={guestCount} onChange={e => setGuestCount(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>{t('tablePlan.roomNumber')}</Label>
+                  <Input value={roomNumber} onChange={e => setRoomNumber(e.target.value)} placeholder="102" />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>{t('tablePlan.type')}</Label>
+                <Select value={reservationType} onValueChange={v => setReservationType(v as ReservationType)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2-ret">2-ret</SelectItem>
+                    <SelectItem value="3-ret">3-ret</SelectItem>
+                    <SelectItem value="4-ret">4-ret</SelectItem>
+                    <SelectItem value="a-la-carte">A la carte</SelectItem>
+                    <SelectItem value="bordreservation">Bordreservation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <QuickNoteButtons
+                coffeeOnly={coffeeOnly}
+                coffeeTeaSweet={coffeeTeaSweet}
+                wineMenu={wineMenu}
+                notes={notes}
+                onCoffeeOnlyChange={setCoffeeOnly}
+                onCoffeeTeaSweetChange={setCoffeeTeaSweet}
+                onWineMenuChange={setWineMenu}
+                onNotesChange={setNotes}
+              />
+
+              <div className="grid gap-2">
+                <Label>{t('tablePlan.notes')}</Label>
+                <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('tablePlan.notes')} rows={2} />
+              </div>
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label>{t('tablePlan.type')}</Label>
-            <Select value={reservationType} onValueChange={v => setReservationType(v as ReservationType)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2-ret">2-ret</SelectItem>
-                <SelectItem value="3-ret">3-ret</SelectItem>
-                <SelectItem value="4-ret">4-ret</SelectItem>
-                <SelectItem value="a-la-carte">A la carte</SelectItem>
-                <SelectItem value="bordreservation">Bordreservation</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <QuickNoteButtons
-            coffeeOnly={coffeeOnly}
-            coffeeTeaSweet={coffeeTeaSweet}
-            wineMenu={wineMenu}
-            notes={notes}
-            onCoffeeOnlyChange={setCoffeeOnly}
-            onCoffeeTeaSweetChange={setCoffeeTeaSweet}
-            onWineMenuChange={setWineMenu}
-            onNotesChange={setNotes}
-          />
-
-          <div className="grid gap-2">
-            <Label>{t('tablePlan.notes')}</Label>
-            <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('tablePlan.notes')} rows={2} />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
-          <Button onClick={handleSubmit}>{t('common.save')}</Button>
-        </DialogFooter>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
+              <Button onClick={handleSubmit}>{t('common.save')}</Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

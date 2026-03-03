@@ -35,7 +35,8 @@ function deserializeAssignments(obj: any): Assignments {
 export default function TablePlan() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, hasDepartment } = useAuth();
+  const buffOnly = hasDepartment('reception') && !hasDepartment('restaurant');
   const [assignments, setAssignments] = useState<Assignments | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -72,6 +73,9 @@ export default function TablePlan() {
         .maybeSingle();
       if (data) {
         setAssignments(deserializeAssignments(data.assignments_json));
+      } else if (buffOnly) {
+        // Reception-only users always see the floor plan (even empty)
+        setAssignments({ singles: new Map(), merges: [] });
       }
     };
     loadToday();
@@ -910,7 +914,7 @@ export default function TablePlan() {
               <Save className="h-3 w-3" /> {t('tablePlan.saved')}
             </span>
           )}
-          {hasReservations && (
+          {hasReservations && !buffOnly && (
             <>
               <Button
                 variant="outline"
@@ -955,7 +959,7 @@ export default function TablePlan() {
         </div>
       </div>
 
-      {!hasReservations ? (
+      {!hasReservations && !buffOnly ? (
         <div className="space-y-4">
           <PdfUploader onUpload={handleUpload} isProcessing={isProcessing} />
 
@@ -993,17 +997,17 @@ export default function TablePlan() {
         <div className="space-y-6">
           <FloorPlan
             assignments={assignments}
-            onMoveReservation={onMoveReservation}
-            onMerge={onMerge}
-            onUnmerge={onUnmerge}
+            onMoveReservation={buffOnly ? () => {} : onMoveReservation}
+            onMerge={buffOnly ? () => {} : onMerge}
+            onUnmerge={buffOnly ? () => {} : onUnmerge}
             onClickFreeTable={onClickFreeTable}
             onClickOccupiedTable={onClickOccupiedTable}
-            onMarkArrived={onMarkArrived}
-            onClearTable={onClearTable}
-            onClearAll={onClearAll}
-            onAdvanceCourse={onAdvanceCourse}
-            undoMap={undoMap}
-            onUndo={onUndoClear}
+            onMarkArrived={buffOnly ? undefined : onMarkArrived}
+            onClearTable={buffOnly ? undefined : onClearTable}
+            onClearAll={buffOnly ? undefined : onClearAll}
+            onAdvanceCourse={buffOnly ? undefined : onAdvanceCourse}
+            undoMap={buffOnly ? new Map() : undoMap}
+            onUndo={buffOnly ? undefined : onUndoClear}
             justAddedTables={justAddedTables}
           />
         </div>
@@ -1011,20 +1015,20 @@ export default function TablePlan() {
         <>
            <FloorPlan
             assignments={assignments}
-            onMoveReservation={onMoveReservation}
-            onMerge={onMerge}
-            onUnmerge={onUnmerge}
+            onMoveReservation={buffOnly ? () => {} : onMoveReservation}
+            onMerge={buffOnly ? () => {} : onMerge}
+            onUnmerge={buffOnly ? () => {} : onUnmerge}
             onClickFreeTable={onClickFreeTable}
             onClickOccupiedTable={onClickOccupiedTable}
-            onMarkArrived={onMarkArrived}
-            onClearTable={onClearTable}
-            onClearAll={onClearAll}
-            onAdvanceCourse={onAdvanceCourse}
-            undoMap={undoMap}
-            onUndo={onUndoClear}
+            onMarkArrived={buffOnly ? undefined : onMarkArrived}
+            onClearTable={buffOnly ? undefined : onClearTable}
+            onClearAll={buffOnly ? undefined : onClearAll}
+            onAdvanceCourse={buffOnly ? undefined : onAdvanceCourse}
+            undoMap={buffOnly ? new Map() : undoMap}
+            onUndo={buffOnly ? undefined : onUndoClear}
             justAddedTables={justAddedTables}
           />
-          {reservationCount > 0 && <PreparationSummary reservations={allReservations} />}
+          {reservationCount > 0 && !buffOnly && <PreparationSummary reservations={allReservations} />}
         </>
       )}
 
@@ -1035,6 +1039,7 @@ export default function TablePlan() {
         tableLabel={addDialogLabel}
         tableCapacity={addDialogCapacity}
         onAdd={handleAddReservation}
+        buffOnly={buffOnly}
       />
 
       {/* Reservation detail dialog */}
@@ -1046,6 +1051,7 @@ export default function TablePlan() {
           reservation={detailReservation}
           onEdit={handleEditReservation}
           onRemove={handleRemoveReservation}
+          readOnly={buffOnly && detailReservation.reservationType !== 'buff'}
         />
       )}
     </div>

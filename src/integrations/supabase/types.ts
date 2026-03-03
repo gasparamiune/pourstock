@@ -292,6 +292,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_approved: boolean
+          last_update_seen: string | null
           phone_number: string | null
           updated_at: string
           user_id: string
@@ -303,6 +304,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_approved?: boolean
+          last_update_seen?: string | null
           phone_number?: string | null
           updated_at?: string
           user_id: string
@@ -314,6 +316,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_approved?: boolean
+          last_update_seen?: string | null
           phone_number?: string | null
           updated_at?: string
           user_id?: string
