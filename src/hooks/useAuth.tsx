@@ -1,8 +1,10 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 type AppRole = 'admin' | 'manager' | 'staff';
+type Department = 'reception' | 'housekeeping' | 'restaurant';
+type DepartmentRole = 'manager' | 'receptionist' | 'hk_worker' | 'staff';
 
 interface Profile {
   id: string;
@@ -14,11 +16,17 @@ interface Profile {
   is_approved: boolean;
 }
 
+interface UserDepartment {
+  department: Department;
+  department_role: DepartmentRole;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   roles: AppRole[];
+  departments: UserDepartment[];
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -26,6 +34,8 @@ interface AuthContextType {
   isAdmin: boolean;
   isManager: boolean;
   isStaff: boolean;
+  hasDepartment: (dept: Department) => boolean;
+  isDepartmentManager: (dept: Department) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,16 +45,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [departments, setDepartments] = useState<UserDepartment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer Supabase calls with setTimeout to prevent deadlock
         if (session?.user) {
           setTimeout(() => {
             fetchUserData(session.user.id);
@@ -52,12 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setRoles([]);
+          setDepartments([]);
           setLoading(false);
         }
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -74,28 +83,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function fetchUserData(userId: string) {
     try {
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      // Fetch profile, roles, and departments in parallel
+      const [profileRes, rolesRes, deptRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('user_id', userId).single(),
+        supabase.from('user_roles').select('role').eq('user_id', userId),
+        supabase.from('user_departments').select('department, department_role').eq('user_id', userId),
+      ]);
 
-      if (profileData) {
-        setProfile(profileData as Profile);
+      if (profileRes.data) {
+        setProfile(profileRes.data as Profile);
       }
 
-      // Fetch roles
-      const { data: rolesData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
+      if (rolesRes.data) {
+        setRoles(rolesRes.data.map(r => r.role as AppRole));
+      }
 
-      if (rolesData) {
-        setRoles(rolesData.map(r => r.role as AppRole));
+      if (deptRes.data) {
+        setDepartments(deptRes.data as UserDepartment[]);
       }
     } catch (error) {
-      // Only log errors in development to prevent information leakage
       if (import.meta.env.DEV) {
         console.error('Error fetching user data:', error);
       }
@@ -105,24 +111,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error as Error | null };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
+        data: { full_name: fullName },
       },
     });
     return { error: error as Error | null };
@@ -132,11 +132,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     setRoles([]);
+    setDepartments([]);
   };
 
   const isAdmin = roles.includes('admin');
   const isManager = roles.includes('manager') || isAdmin;
   const isStaff = roles.includes('staff') || isManager;
+
+  const hasDepartment = useCallback((dept: Department) => {
+    if (isAdmin) return true;
+    return departments.some(d => d.department === dept);
+  }, [departments, isAdmin]);
+
+  const isDepartmentManager = useCallback((dept: Department) => {
+    if (isAdmin) return true;
+    return departments.some(d => d.department === dept && d.department_role === 'manager');
+  }, [departments, isAdmin]);
 
   return (
     <AuthContext.Provider
@@ -145,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         roles,
+        departments,
         loading,
         signIn,
         signUp,
@@ -152,6 +164,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin,
         isManager,
         isStaff,
+        hasDepartment,
+        isDepartmentManager,
       }}
     >
       {children}

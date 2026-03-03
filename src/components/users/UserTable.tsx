@@ -20,6 +20,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 
+const deptColors: Record<string, string> = {
+  reception: 'bg-[hsl(var(--room-occupied))]/15 text-[hsl(var(--room-occupied))] border-[hsl(var(--room-occupied))]/30',
+  housekeeping: 'bg-[hsl(var(--hk-clean))]/15 text-[hsl(var(--hk-clean))] border-[hsl(var(--hk-clean))]/30',
+  restaurant: 'bg-primary/15 text-primary border-primary/30',
+};
+
 interface UserTableProps {
   users: UserProfile[];
   currentUserId: string;
@@ -61,6 +67,7 @@ export function UserTable({ users, currentUserId, onApprove, onUpdateRole, onEdi
               <TableHead>{t('users.email')}</TableHead>
               <TableHead className="hidden md:table-cell">{t('users.phone')}</TableHead>
               <TableHead>{t('users.role')}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t('users.departments')}</TableHead>
               <TableHead>{t('users.status')}</TableHead>
               <TableHead className="text-right">{t('users.actions')}</TableHead>
             </TableRow>
@@ -98,19 +105,31 @@ export function UserTable({ users, currentUserId, onApprove, onUpdateRole, onEdi
                       </Badge>
                     )}
                   </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <div className="flex flex-wrap gap-1">
+                      {(user.departments || []).map(d => (
+                        <Badge key={d.department} variant="outline" className={cn("text-xs capitalize", deptColors[d.department] || '')}>
+                          {t(`dept.${d.department}`)}
+                        </Badge>
+                      ))}
+                      {(!user.departments || user.departments.length === 0) && (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {user.is_approved ? (
-                      <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                      <Badge className="bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] border-[hsl(var(--success))]/20">
                         {t('users.approved')}
                       </Badge>
                     ) : (
                       <div className="flex items-center gap-1">
-                        <Badge variant="outline" className="border-amber-500/30 text-amber-600">
+                        <Badge variant="outline" className="border-primary/30 text-primary">
                           {t('users.pending')}
                         </Badge>
                         {canModify && (
                           <>
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-600" onClick={() => onApprove(user.user_id, true)}>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-[hsl(var(--success))]" onClick={() => onApprove(user.user_id, true)}>
                               <Check className="h-4 w-4" />
                             </Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onApprove(user.user_id, false)}>

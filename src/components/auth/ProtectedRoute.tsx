@@ -7,14 +7,16 @@ interface ProtectedRouteProps {
   children: ReactNode;
   requireAdmin?: boolean;
   requireManager?: boolean;
+  requireDepartment?: 'reception' | 'housekeeping' | 'restaurant';
 }
 
 export function ProtectedRoute({ 
   children, 
   requireAdmin = false,
-  requireManager = false 
+  requireManager = false,
+  requireDepartment,
 }: ProtectedRouteProps) {
-  const { user, loading, isAdmin, isManager, profile } = useAuth();
+  const { user, loading, isAdmin, isManager, profile, hasDepartment } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -46,6 +48,17 @@ export function ProtectedRoute({
         <div className="text-center">
           <h1 className="text-2xl font-bold text-destructive">Access Denied</h1>
           <p className="text-muted-foreground mt-2">You need manager privileges to access this page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (requireDepartment && !hasDepartment(requireDepartment)) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-destructive">Access Denied</h1>
+          <p className="text-muted-foreground mt-2">You don't have access to the {requireDepartment} department.</p>
         </div>
       </div>
     );
