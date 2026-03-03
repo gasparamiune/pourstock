@@ -651,7 +651,7 @@ export default function TablePlan() {
       .cap { font-size: 11px; color: #888; margin-left: 2px; }
       .gl { font-size: 13px; margin-top: 2px; line-height: 1.3; }
       .tb { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; color: white; margin-left: 3px; vertical-align: middle; }
-      .rl { font-size: 11px; color: #555; }
+      .rl { font-size: 14px; color: #222; font-weight: 700; }
       .notes { color: #c00; font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
       .coffee { color: #b45309; font-size: 11px; }
       .free { color: #ccc; font-size: 13px; text-align: center; padding-top: 8px; }
