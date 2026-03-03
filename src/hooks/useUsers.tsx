@@ -4,6 +4,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { useCallback } from 'react';
 
+export interface UserDepartment {
+  department: string;
+  department_role: string;
+}
+
 export interface UserProfile {
   id: string;
   user_id: string;
@@ -14,6 +19,7 @@ export interface UserProfile {
   avatar_url: string | null;
   created_at: string;
   role: string;
+  departments: UserDepartment[];
 }
 
 async function invokeManageUsers(action: string, params: Record<string, any>) {
@@ -33,36 +39,40 @@ export function useUsers() {
     queryClient.invalidateQueries({ queryKey: ['users'] });
   }, [queryClient]);
 
-  useRealtimeSubscription(['profiles', 'user_roles'], invalidateUsers);
+  useRealtimeSubscription(['profiles', 'user_roles', 'user_departments'], invalidateUsers);
 
   const usersQuery = useQuery({
     queryKey: ['users'],
     queryFn: async (): Promise<UserProfile[]> => {
-      const { data: profiles, error: pErr } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const [profilesRes, rolesRes, deptsRes] = await Promise.all([
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.from('user_roles').select('user_id, role'),
+        supabase.from('user_departments').select('user_id, department, department_role'),
+      ]);
 
-      if (pErr) throw pErr;
-
-      const { data: roles, error: rErr } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      if (rErr) throw rErr;
+      if (profilesRes.error) throw profilesRes.error;
+      if (rolesRes.error) throw rolesRes.error;
 
       const roleMap = new Map<string, string>();
-      (roles || []).forEach((r: any) => roleMap.set(r.user_id, r.role));
+      (rolesRes.data || []).forEach((r: any) => roleMap.set(r.user_id, r.role));
 
-      return (profiles || []).map((p: any) => ({
+      const deptMap = new Map<string, UserDepartment[]>();
+      (deptsRes.data || []).forEach((d: any) => {
+        const existing = deptMap.get(d.user_id) || [];
+        existing.push({ department: d.department, department_role: d.department_role });
+        deptMap.set(d.user_id, existing);
+      });
+
+      return (profilesRes.data || []).map((p: any) => ({
         ...p,
         role: roleMap.get(p.user_id) || 'staff',
+        departments: deptMap.get(p.user_id) || [],
       }));
     },
   });
 
   const createUser = useMutation({
-    mutationFn: (params: { email: string; password: string; fullName: string; phone?: string; role: string }) =>
+    mutationFn: (params: { email: string; password: string; fullName: string; phone?: string; role: string; departments?: { department: string; department_role: string }[] }) =>
       invokeManageUsers('createUser', params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -124,6 +134,26 @@ export function useUsers() {
     onError: (err: Error) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
   });
 
+  const assignDepartment = useMutation({
+    mutationFn: ({ userId, department, departmentRole }: { userId: string; department: string; departmentRole: string }) =>
+      invokeManageUsers('assignDepartment', { userId, department, departmentRole }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({ title: 'Department assigned' });
+    },
+    onError: (err: Error) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
+  });
+
+  const removeDepartment = useMutation({
+    mutationFn: ({ userId, department }: { userId: string; department: string }) =>
+      invokeManageUsers('removeDepartment', { userId, department }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({ title: 'Department removed' });
+    },
+    onError: (err: Error) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
+  });
+
   return {
     users: usersQuery.data || [],
     isLoading: usersQuery.isLoading,
@@ -134,5 +164,7 @@ export function useUsers() {
     updateRole,
     resetPassword,
     updateProfile,
+    assignDepartment,
+    removeDepartment,
   };
 }

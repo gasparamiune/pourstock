@@ -54,6 +54,19 @@
     --soda: 199 80% 50%;
     --syrup: 320 60% 50%;
 
+    /* Room status colors */
+    --room-available: 142 71% 45%;
+    --room-occupied: 199 89% 48%;
+    --room-checkout: 38 92% 50%;
+    --room-maintenance: 0 72% 51%;
+    --room-reserved: 280 50% 50%;
+
+    /* Housekeeping status colors */
+    --hk-dirty: 0 72% 51%;
+    --hk-in-progress: 38 92% 50%;
+    --hk-clean: 142 71% 45%;
+    --hk-inspected: 199 89% 48%;
+
     /* Glass morphism */
     --glass: 220 15% 15% / 0.6;
     --glass-border: 220 12% 25% / 0.5;

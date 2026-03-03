@@ -1,0 +1,339 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useEffect } from 'react';
+
+// Types
+export interface Room {
+  id: string;
+  room_number: string;
+  floor: number;
+  room_type: string;
+  status: string;
+  capacity: number;
+  amenities: any;
+  is_active: boolean;
+  notes: string | null;
+}
+
+export interface Guest {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  nationality: string | null;
+  passport_number: string | null;
+  notes: string | null;
+  visit_count: number;
+}
+
+export interface Reservation {
+  id: string;
+  guest_id: string;
+  room_id: string;
+  check_in_date: string;
+  check_out_date: string;
+  status: string;
+  adults: number;
+  children: number;
+  rate_per_night: number | null;
+  total_amount: number | null;
+  payment_status: string;
+  source: string | null;
+  special_requests: string | null;
+  assigned_by: string | null;
+  guest?: Guest;
+  room?: Room;
+}
+
+export interface RoomCharge {
+  id: string;
+  reservation_id: string;
+  description: string;
+  amount: number;
+  charge_type: string;
+  charged_by: string | null;
+  created_at: string;
+}
+
+// Hooks
+export function useRooms() {
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ['rooms'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('is_active', true)
+        .order('room_number');
+      if (error) throw error;
+      return data as Room[];
+    },
+  });
+
+  // Realtime
+  useEffect(() => {
+    const channel = supabase
+      .channel('rooms-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
+  return query;
+}
+
+export function useGuests() {
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ['guests'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('guests')
+        .select('*')
+        .order('last_name');
+      if (error) throw error;
+      return data as Guest[];
+    },
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('guests-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'guests' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['guests'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
+  return query;
+}
+
+export function useReservations(dateFilter?: { from: string; to: string }) {
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ['reservations', dateFilter],
+    queryFn: async () => {
+      let q = supabase
+        .from('reservations')
+        .select('*, guest:guests(*), room:rooms(*)')
+        .order('check_in_date', { ascending: true });
+
+      if (dateFilter) {
+        q = q.lte('check_in_date', dateFilter.to).gte('check_out_date', dateFilter.from);
+      }
+
+      const { data, error } = await q;
+      if (error) throw error;
+      return data as Reservation[];
+    },
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('reservations-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
+  return query;
+}
+
+export function useRoomCharges(reservationId?: string) {
+  return useQuery({
+    queryKey: ['room-charges', reservationId],
+    queryFn: async () => {
+      if (!reservationId) return [];
+      const { data, error } = await supabase
+        .from('room_charges')
+        .select('*')
+        .eq('reservation_id', reservationId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as RoomCharge[];
+    },
+    enabled: !!reservationId,
+  });
+}
+
+// Mutations
+export function useRoomMutations() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const createRoom = useMutation({
+    mutationFn: async (room: Partial<Room>) => {
+      const { data, error } = await supabase.from('rooms').insert(room as any).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      toast({ title: 'Room created' });
+    },
+    onError: (err: Error) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
+  });
+
+  const updateRoom = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Room> & { id: string }) => {
+      const { error } = await supabase.from('rooms').update(updates as any).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['rooms'] }),
+    onError: (err: Error) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
+  });
+
+  return { createRoom, updateRoom };
+}
+
+export function useGuestMutations() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const createGuest = useMutation({
+    mutationFn: async (guest: Partial<Guest>) => {
+      const { data, error } = await supabase.from('guests').insert(guest as any).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guests'] });
+      toast({ title: 'Guest added' });
+    },
+    onError: (err: Error) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
+  });
+
+  const updateGuest = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Guest> & { id: string }) => {
+      const { error } = await supabase.from('guests').update(updates as any).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['guests'] }),
+    onError: (err: Error) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
+  });
+
+  return { createGuest, updateGuest };
+}
+
+export function useReservationMutations() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const createReservation = useMutation({
+    mutationFn: async (res: Partial<Reservation>) => {
+      const { data, error } = await supabase.from('reservations').insert({
+        ...res,
+        assigned_by: user?.id,
+      } as any).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      toast({ title: 'Reservation created' });
+    },
+    onError: (err: Error) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
+  });
+
+  const checkIn = useMutation({
+    mutationFn: async (reservationId: string) => {
+      const { error: resErr } = await supabase
+        .from('reservations')
+        .update({ status: 'checked_in' } as any)
+        .eq('id', reservationId);
+      if (resErr) throw resErr;
+
+      // Get the reservation to update room status
+      const { data: res } = await supabase.from('reservations').select('room_id').eq('id', reservationId).single();
+      if (res) {
+        await supabase.from('rooms').update({ status: 'occupied' } as any).eq('id', res.room_id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      toast({ title: 'Guest checked in' });
+    },
+    onError: (err: Error) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
+  });
+
+  const checkOut = useMutation({
+    mutationFn: async (reservationId: string) => {
+      const { data: res } = await supabase.from('reservations').select('room_id').eq('id', reservationId).single();
+      
+      const { error: resErr } = await supabase
+        .from('reservations')
+        .update({ status: 'checked_out' } as any)
+        .eq('id', reservationId);
+      if (resErr) throw resErr;
+
+      if (res) {
+        await supabase.from('rooms').update({ status: 'checkout' } as any).eq('id', res.room_id);
+        // Auto-create housekeeping task
+        const today = new Date().toISOString().split('T')[0];
+        await supabase.from('housekeeping_tasks').upsert({
+          room_id: res.room_id,
+          task_date: today,
+          status: 'dirty',
+          task_type: 'checkout_clean',
+          priority: 'normal',
+        } as any, { onConflict: 'room_id,task_date' });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['housekeeping-tasks'] });
+      toast({ title: 'Guest checked out' });
+    },
+    onError: (err: Error) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
+  });
+
+  const updateReservation = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Reservation> & { id: string }) => {
+      const { error } = await supabase.from('reservations').update(updates as any).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reservations'] }),
+    onError: (err: Error) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
+  });
+
+  return { createReservation, checkIn, checkOut, updateReservation };
+}
+
+export function useChargeMutations() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const addCharge = useMutation({
+    mutationFn: async (charge: Partial<RoomCharge>) => {
+      const { data, error } = await supabase.from('room_charges').insert({
+        ...charge,
+        charged_by: user?.id,
+      } as any).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['room-charges'] });
+      toast({ title: 'Charge added' });
+    },
+    onError: (err: Error) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
+  });
+
+  return { addCharge };
+}

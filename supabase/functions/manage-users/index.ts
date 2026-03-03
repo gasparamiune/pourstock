@@ -6,6 +6,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+function jsonResponse(body: any, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -16,14 +23,9 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    // Verify caller is manager or admin
+    // Verify caller
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!authHeader) return jsonResponse({ error: "Unauthorized" }, 401);
 
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const callerClient = createClient(supabaseUrl, anonKey, {
@@ -31,12 +33,7 @@ Deno.serve(async (req) => {
     });
 
     const { data: { user: caller } } = await callerClient.auth.getUser();
-    if (!caller) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!caller) return jsonResponse({ error: "Unauthorized" }, 401);
 
     // Check caller role
     const { data: callerRoles } = await supabaseAdmin
@@ -49,15 +46,11 @@ Deno.serve(async (req) => {
     const callerIsManager = callerRoleList.includes("manager");
 
     if (!callerIsAdmin && !callerIsManager) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Forbidden" }, 403);
     }
 
     const { action, ...params } = await req.json();
 
-    // Helper: check if target is admin (managers can't touch admins)
     async function isTargetAdmin(userId: string): Promise<boolean> {
       const { data } = await supabaseAdmin
         .from("user_roles")
@@ -69,14 +62,10 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "createUser": {
-        const { email, password, fullName, phone, role } = params;
-        
-        // Only admins can create admin users
+        const { email, password, fullName, phone, role, departments } = params;
+
         if (role === "admin" && !callerIsAdmin) {
-          return new Response(JSON.stringify({ error: "Only admins can assign the admin role" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Only admins can assign the admin role" }, 403);
         }
 
         const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -86,134 +75,97 @@ Deno.serve(async (req) => {
           user_metadata: { full_name: fullName },
         });
 
-        if (createError) {
-          return new Response(JSON.stringify({ error: createError.message }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+        if (createError) return jsonResponse({ error: createError.message }, 400);
 
-        // Update profile with phone and approval
         await supabaseAdmin
           .from("profiles")
           .update({ phone_number: phone || null, is_approved: true, full_name: fullName })
           .eq("user_id", newUser.user.id);
 
-        // Assign role
         if (role) {
           await supabaseAdmin
             .from("user_roles")
             .upsert({ user_id: newUser.user.id, role }, { onConflict: "user_id,role" });
         }
 
-        return new Response(JSON.stringify({ success: true, userId: newUser.user.id }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        // Assign departments
+        if (departments && Array.isArray(departments)) {
+          for (const dept of departments) {
+            await supabaseAdmin.from("user_departments").upsert(
+              { user_id: newUser.user.id, department: dept.department, department_role: dept.department_role || "staff" },
+              { onConflict: "user_id,department" }
+            );
+          }
+        }
+
+        return jsonResponse({ success: true, userId: newUser.user.id });
       }
 
       case "deleteUser": {
         const { userId } = params;
-        
-        // Managers can't delete admins
         if (!callerIsAdmin && await isTargetAdmin(userId)) {
-          return new Response(JSON.stringify({ error: "Managers cannot delete admin users" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Managers cannot delete admin users" }, 403);
         }
-
-        // Can't delete yourself
         if (userId === caller.id) {
-          return new Response(JSON.stringify({ error: "Cannot delete your own account" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Cannot delete your own account" }, 400);
         }
 
         const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-        if (deleteError) {
-          return new Response(JSON.stringify({ error: deleteError.message }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        if (deleteError) return jsonResponse({ error: deleteError.message }, 400);
+        return jsonResponse({ success: true });
       }
 
       case "resetPassword": {
         const { email } = params;
-        
-        const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-          type: "recovery",
-          email,
-        });
-
-        if (error) {
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        return new Response(JSON.stringify({ success: true, link: data.properties?.action_link }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        const { data, error } = await supabaseAdmin.auth.admin.generateLink({ type: "recovery", email });
+        if (error) return jsonResponse({ error: error.message }, 400);
+        return jsonResponse({ success: true, link: data.properties?.action_link });
       }
 
       case "approveUser": {
         const { userId, approved } = params;
-
-        await supabaseAdmin
-          .from("profiles")
-          .update({ is_approved: approved })
-          .eq("user_id", userId);
-
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        await supabaseAdmin.from("profiles").update({ is_approved: approved }).eq("user_id", userId);
+        return jsonResponse({ success: true });
       }
 
       case "updateRole": {
         const { userId, role } = params;
-        
-        // Only admins can assign admin role
         if (role === "admin" && !callerIsAdmin) {
-          return new Response(JSON.stringify({ error: "Only admins can assign the admin role" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Only admins can assign the admin role" }, 403);
         }
-
-        // Managers can't change admin's role
         if (!callerIsAdmin && await isTargetAdmin(userId)) {
-          return new Response(JSON.stringify({ error: "Managers cannot modify admin users" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Managers cannot modify admin users" }, 403);
         }
-
-        // Delete existing roles, insert new one
         await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
         await supabaseAdmin.from("user_roles").insert({ user_id: userId, role });
+        return jsonResponse({ success: true });
+      }
 
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      case "assignDepartment": {
+        const { userId, department, departmentRole } = params;
+        if (!callerIsAdmin && await isTargetAdmin(userId)) {
+          return jsonResponse({ error: "Managers cannot modify admin users" }, 403);
+        }
+        await supabaseAdmin.from("user_departments").upsert(
+          { user_id: userId, department, department_role: departmentRole || "staff" },
+          { onConflict: "user_id,department" }
+        );
+        return jsonResponse({ success: true });
+      }
+
+      case "removeDepartment": {
+        const { userId, department } = params;
+        if (!callerIsAdmin && await isTargetAdmin(userId)) {
+          return jsonResponse({ error: "Managers cannot modify admin users" }, 403);
+        }
+        await supabaseAdmin.from("user_departments").delete().eq("user_id", userId).eq("department", department);
+        return jsonResponse({ success: true });
       }
 
       default:
-        return new Response(JSON.stringify({ error: "Unknown action" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return jsonResponse({ error: "Unknown action" }, 400);
     }
   } catch (err) {
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: "Internal server error" }, 500);
   }
 });
