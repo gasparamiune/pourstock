@@ -8,11 +8,14 @@ import { supabase } from '@/integrations/supabase/client';
 const CURRENT_VERSION = '2026-03-03-v1';
 
 const UPDATES = [
+  '🏨 Welcome Reception & Housekeeping departments to PourStock!',
+  'New Reception module — room board, guest directory & check-in/out',
+  'New Housekeeping module — status board, task assignments & maintenance reports',
   'Improved table plan layout for large parties (18+ guests)',
+  'Auto-merge tables when guest count exceeds capacity',
   'Added wine menu indicator on table cards',
   'New course timing alerts — visual warning when service is overdue',
   'Undo & redo support in the table plan',
-  'Visual shine effect when a new reservation is added',
   'Reception staff can now manage BUFF tables in the table plan',
   'Bug fixes and performance improvements',
 ];
