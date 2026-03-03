@@ -44,6 +44,7 @@ interface NavItem {
   requireAdmin?: boolean;
   requireManager?: boolean;
   department?: 'reception' | 'housekeeping' | 'restaurant';
+  departments?: readonly ('reception' | 'housekeeping' | 'restaurant')[];
 }
 
 const navItems: NavItem[] = [
@@ -51,7 +52,7 @@ const navItems: NavItem[] = [
   { path: '/inventory', labelKey: 'nav.inventory', icon: Package, department: 'restaurant' },
   { path: '/products', labelKey: 'nav.products', icon: ClipboardList, department: 'restaurant' },
   { path: '/import', labelKey: 'nav.import', icon: Upload, department: 'restaurant' },
-  { path: '/table-plan', labelKey: 'nav.tablePlan', icon: LayoutGrid, department: 'restaurant' },
+  { path: '/table-plan', labelKey: 'nav.tablePlan', icon: LayoutGrid, departments: ['restaurant', 'reception'] as const },
   { path: '/orders', labelKey: 'nav.orders', icon: ShoppingCart, department: 'restaurant' },
   { path: '/reports', labelKey: 'nav.reports', icon: BarChart3, department: 'restaurant' },
   { path: '/user-management', labelKey: 'nav.userManagement', icon: Users, requireManager: true },
@@ -80,6 +81,9 @@ export function AppShell({ children }: AppShellProps) {
   const filteredNavItems = navItems.filter((item) => {
     if (item.requireAdmin && !isAdmin) return false;
     if (item.requireManager && !isManager) return false;
+    if (item.departments) {
+      return item.departments.some(d => hasDepartment(d));
+    }
     if (item.department && !hasDepartment(item.department)) return false;
     return true;
   });
@@ -266,7 +270,7 @@ export function AppShell({ children }: AppShellProps) {
         {children}
       </main>
 
-      <UpdateAlert userName={profile?.full_name} />
+      <UpdateAlert userName={profile?.full_name} userId={user?.id} />
     </div>
   );
 }

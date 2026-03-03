@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Check } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Increment this version string every time you publish meaningful updates
 const CURRENT_VERSION = '2026-03-03-v1';
@@ -12,28 +13,45 @@ const UPDATES = [
   'New course timing alerts — visual warning when service is overdue',
   'Undo & redo support in the table plan',
   'Visual shine effect when a new reservation is added',
+  'Reception staff can now manage BUFF tables in the table plan',
   'Bug fixes and performance improvements',
 ];
 
 interface UpdateAlertProps {
   userName?: string | null;
+  userId?: string | null;
 }
 
-export function UpdateAlert({ userName }: UpdateAlertProps) {
+export function UpdateAlert({ userName, userId }: UpdateAlertProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const lastSeen = localStorage.getItem('pourstock_last_update_seen');
-    if (lastSeen !== CURRENT_VERSION) {
-      // Small delay so the app loads first
-      const timer = setTimeout(() => setOpen(true), 800);
-      return () => clearTimeout(timer);
-    }
-  }, []);
+    if (!userId) return;
 
-  const handleDismiss = () => {
-    localStorage.setItem('pourstock_last_update_seen', CURRENT_VERSION);
+    const checkVersion = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('last_update_seen')
+        .eq('user_id', userId)
+        .single();
+
+      if (data && (data as any).last_update_seen !== CURRENT_VERSION) {
+        setTimeout(() => setOpen(true), 800);
+      } else if (!data) {
+        setTimeout(() => setOpen(true), 800);
+      }
+    };
+    checkVersion();
+  }, [userId]);
+
+  const handleDismiss = async () => {
     setOpen(false);
+    if (userId) {
+      await supabase
+        .from('profiles')
+        .update({ last_update_seen: CURRENT_VERSION } as any)
+        .eq('user_id', userId);
+    }
   };
 
   return (

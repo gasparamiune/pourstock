@@ -18,9 +18,10 @@ interface ReservationDetailDialogProps {
   reservation: Reservation;
   onEdit: (reservation: Reservation) => void;
   onRemove: () => void;
+  readOnly?: boolean;
 }
 
-export function ReservationDetailDialog({ open, onOpenChange, tableLabel, reservation, onEdit, onRemove }: ReservationDetailDialogProps) {
+export function ReservationDetailDialog({ open, onOpenChange, tableLabel, reservation, onEdit, onRemove, readOnly = false }: ReservationDetailDialogProps) {
   const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [guestName, setGuestName] = useState(reservation.guestName);
@@ -145,14 +146,16 @@ export function ReservationDetailDialog({ open, onOpenChange, tableLabel, reserv
             </div>
           )}
         </div>
-        <DialogFooter className="gap-2">
-          <Button variant="destructive" size="sm" onClick={handleRemove}>
-            <Trash2 className="h-4 w-4 mr-1" /> {t('tablePlan.remove')}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-            <Pencil className="h-4 w-4 mr-1" /> {t('common.edit')}
-          </Button>
-        </DialogFooter>
+        {!readOnly && (
+          <DialogFooter className="gap-2">
+            <Button variant="destructive" size="sm" onClick={handleRemove}>
+              <Trash2 className="h-4 w-4 mr-1" /> {t('tablePlan.remove')}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+              <Pencil className="h-4 w-4 mr-1" /> {t('common.edit')}
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
