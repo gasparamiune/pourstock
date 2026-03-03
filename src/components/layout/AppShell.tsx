@@ -17,7 +17,9 @@ import {
   LayoutGrid,
   Users,
   BedDouble,
-  SprayCan
+  SprayCan,
+  ChevronDown,
+  UtensilsCrossed
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -83,6 +85,22 @@ export function AppShell({ children }: AppShellProps) {
     return true;
   });
 
+  const allDepartments = [
+    { key: 'reception', label: t('nav.reception'), icon: BedDouble, path: '/reception' },
+    { key: 'housekeeping', label: t('nav.housekeeping'), icon: SprayCan, path: '/housekeeping' },
+    { key: 'restaurant', label: t('nav.restaurant') || 'Restaurant', icon: UtensilsCrossed, path: '/inventory' },
+  ] as const;
+
+  const availableDepartments = allDepartments.filter(
+    (d) => isAdmin || hasDepartment(d.key as 'reception' | 'housekeeping' | 'restaurant')
+  );
+
+  const currentDept = availableDepartments.find((d) =>
+    location.pathname.startsWith(d.path) || 
+    (d.key === 'restaurant' && ['/inventory', '/products', '/import', '/table-plan', '/orders', '/reports'].some(p => location.pathname.startsWith(p)))
+  );
+  const activeDeptLabel = currentDept?.label || t('nav.hotelOps') || 'Hotel Operations';
+
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile Header */}
@@ -133,9 +151,30 @@ export function AppShell({ children }: AppShellProps) {
               <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
                 <Package className="h-5 w-5 text-primary-foreground" />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <span className="font-display font-bold text-lg text-sidebar-foreground">PourStock</span>
-                <p className="text-xs text-muted-foreground">Hotel Operations</p>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-sidebar-foreground transition-colors">
+                      <span>{activeDeptLabel}</span>
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    <DropdownMenuLabel className="text-xs">{t('nav.departments') || 'Departments'}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {availableDepartments.map((dept) => (
+                      <DropdownMenuItem
+                        key={dept.path}
+                        onClick={() => { navigate(dept.path); setIsSidebarOpen(false); }}
+                        className={cn(location.pathname === dept.path && "bg-accent font-medium")}
+                      >
+                        <dept.icon className="mr-2 h-4 w-4" />
+                        {dept.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
             <Button 
