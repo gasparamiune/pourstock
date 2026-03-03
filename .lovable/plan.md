@@ -1,125 +1,48 @@
 
 
-# Consolidated Plan: Reception Overhaul + Sidebar Cleanup + Housekeeping Notes + Table Plan Print & Course Tracking
+## Clarification & Corrected Plan
 
----
+You're absolutely right — tables merge **horizontally** (same row, adjacent columns like B7 + B17 + B27). My wording was wrong. For 18+ guests, the system splits into N groups (ceil(guests/8)), each group merges tables horizontally within one row, and the groups are placed on **adjacent rows** so they sit near each other.
 
-## 1. Sidebar Cleanup
+## Plan: 8 Table Plan Improvements
 
-**`src/components/layout/AppShell.tsx`**: Remove static "Reception" and "Housekeeping" entries from `navItems`. Users navigate via the department dropdown only. Restaurant sub-pages remain in the sidebar.
+### 1. Large parties 18+ (recursive N-way split)
+Generalize splitting to N groups where N = ceil(guestCount / 8). Each group merges tables horizontally in one row. Groups placed on adjacent rows with overlapping columns.
 
----
+**Files:** `FloorPlan.tsx`, `TablePlan.tsx`
 
-## 2. Reception: Professional Floor-Tabbed Grid
+### 2. Auto-unmerge on reservation removal
+Dissolve merge groups back to individual tables when their reservation is deleted.
 
-Replace the current card-based RoomBoard with a professional, data-dense table layout.
+**Files:** `TablePlan.tsx`
 
-### Layout
-- **Floor tabs** (Floor 1 / Floor 2 / Floor 3) as prominent buttons at top
-- Each floor shows rooms in a **table/grid** with columns: Room Number, Type + Capacity, Status (color dot + label), Guest Name, Check-in/out dates, Notes (inline editable popover), Action button
-- Left border color indicates status (green=available, blue=occupied, amber=checkout, red=maintenance, purple=reserved)
-- Rooms show as **clean/available by default**
+### 3. "Vinmenu" quick note button
+Add wine glass toggle to QuickNoteButtons. Display wine icon on TableCard.
 
-### Files
-- **Rewrite** `src/components/reception/RoomBoard.tsx` — floor-tabbed table layout
-- **Replace** `src/components/reception/RoomCard.tsx` — becomes inline row component
-- **Minor update** `src/pages/Reception.tsx` — adjust imports
-- **Update** `src/hooks/useReception.tsx` — add `updateRoomNotes` convenience mutation
+**Files:** `QuickNoteButtons.tsx`, `TableCard.tsx`, `AddReservationDialog.tsx`, `ReservationDetailDialog.tsx`
 
----
+### 4. Remove ⚠️ from allergy notes
+Change `⚠️ Allergi:` to `Allergi:` since the red badge already signals it.
 
-## 3. Housekeeping: Manager Notes
+**Files:** `QuickNoteButtons.tsx`
 
-- **Update** `src/components/housekeeping/HKRoomCard.tsx` — show `notes` field; HK managers get an edit button (popover)
-- **Update** `src/hooks/useHousekeeping.tsx` — add `updateTaskNotes` mutation
-- **Update** `src/components/housekeeping/HKStatusBoard.tsx` — pass `isManager` prop
+### 5. Remove 🇩🇰 from flag note
+Change `🇩🇰 Flag på bord` to `Flag på bord`.
 
----
+**Files:** `QuickNoteButtons.tsx`
 
-## 4. Table Plan: Prettier Print Layout
+### 6. Shine animation on new reservation
+3-second circular glow on table border when reservation is added. Track via transient `justAdded` set.
 
-Rewrite `handlePrint` in `src/pages/TablePlan.tsx` (lines 556-636).
+**Files:** `TableCard.tsx`, `FloorPlan.tsx`, `TablePlan.tsx`, `src/index.css`
 
-### New print design
-- **White background** to save ink — no colored fills
-- **Round tables** rendered with `border-radius: 50%` in a flexbox cell
-- **Larger table numbers** (18px bold) and guest text (13px)
-- **Colored left borders** (4px) matching reservation type colors (sky/amber/emerald/violet/slate/rose) — minimal ink, maximum clarity
-- BUFF tables get a dashed left border
-- Notes shown in red text with ⚠ prefix
-- Coffee/tea indicators preserved
-- Layout mirrors the 9×4 digital grid using an HTML table
-- Title: "Bordplan — [date]" with reservation count subtitle
-- `@media print` optimized margins
+### 7. Undo/Redo buttons
+History stack recording each assignment change. Undo2/Redo2 icons at top of page.
 
----
+**Files:** `TablePlan.tsx`
 
-## 5. Table Plan: Course Tracking System
+### 8. Course timing alert border
+Pulsing red ring when elapsed time exceeds course threshold (Forret 15m, Mellemret 10m, Hovedret 25m, Dessert 15m).
 
-Add per-table course progression tracking after "Arrived" is pressed.
-
-### Data model change
-Extend the `Reservation` interface in `TableCard.tsx` with optional timestamp fields:
-```text
-starterServedAt?: string;    // Kør forret
-interServedAt?: string;      // Kør mellemret (only for 4-ret)
-mainServedAt?: string;       // Kør hovedret
-dessertServedAt?: string;    // Kør dessert
-```
-
-### Course progression logic
-After "Arrived": show "Kør forret" button.
-After forret served: 
-- If 4-ret → show "Kør mellemret"
-- Otherwise → show "Kør hovedret"
-After mellemret (4-ret only) → show "Kør hovedret"
-After hovedret → show "Kør dessert"
-After dessert → show elapsed time only (service complete)
-
-### UI in `TableCard.tsx`
-- Replace current arrived section (lines 228-243) with course progression buttons
-- Each button records timestamp + shows elapsed since last course
-- Buttons styled with the table's reservation color
-- Compact layout: current course button + elapsed timer on same line
-
-### Course tracking helper in `TablePlan.tsx`
-- New `onAdvanceCourse(tableId)` callback that sets the next timestamp
-- Passed down through `FloorPlan` to `TableCard`
-
-### Files
-- **Update** `src/components/tableplan/TableCard.tsx` — add course fields to Reservation type, render course buttons
-- **Update** `src/components/tableplan/FloorPlan.tsx` — pass `onAdvanceCourse` prop
-- **Update** `src/pages/TablePlan.tsx` — implement `onAdvanceCourse` callback, update print handler
-
----
-
-## 6. Translations
-
-Add new EN/DA keys to `src/contexts/LanguageContext.tsx`:
-- Floor tabs: `reception.floor1/2/3`
-- Room types: `reception.roomType.single/double/twin/suite/family`
-- Notes: `reception.addNote`, `reception.notes`
-- Course tracking: `tablePlan.starter`, `tablePlan.intermediate`, `tablePlan.main`, `tablePlan.dessert`, `tablePlan.serviceComplete`
-- HK notes: `housekeeping.managerNote`, `housekeeping.addNote`
-
----
-
-## Files Summary
-
-| Action | File |
-|--------|------|
-| Modify | `src/components/layout/AppShell.tsx` — remove dept nav items |
-| Rewrite | `src/components/reception/RoomBoard.tsx` — floor-tabbed table grid |
-| Rewrite | `src/components/reception/RoomCard.tsx` — row component |
-| Modify | `src/pages/Reception.tsx` — adjust for new board |
-| Modify | `src/hooks/useReception.tsx` — add updateRoomNotes |
-| Modify | `src/components/housekeeping/HKRoomCard.tsx` — notes display/edit |
-| Modify | `src/components/housekeeping/HKStatusBoard.tsx` — pass isManager |
-| Modify | `src/hooks/useHousekeeping.tsx` — add updateTaskNotes |
-| Modify | `src/components/tableplan/TableCard.tsx` — course fields + buttons |
-| Modify | `src/components/tableplan/FloorPlan.tsx` — pass onAdvanceCourse |
-| Modify | `src/pages/TablePlan.tsx` — print redesign + course callback |
-| Modify | `src/contexts/LanguageContext.tsx` — new translation keys |
-
-No database migrations needed.
+**Files:** `TableCard.tsx`
 
