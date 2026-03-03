@@ -139,7 +139,7 @@ export function TableCard({
     const lastTs = getLastTimestamp(reservation) || reservation.arrivedAt;
     const calc = () => Math.floor((Date.now() - new Date(lastTs).getTime()) / 60000);
     setElapsed(calc());
-    const interval = setInterval(() => setElapsed(calc()), 30000);
+    const interval = setInterval(() => setElapsed(calc()), 15000);
     return () => clearInterval(interval);
   }, [reservation?.arrivedAt, reservation?.starterServedAt, reservation?.interServedAt, reservation?.mainServedAt, reservation?.dessertServedAt]);
 
@@ -220,21 +220,21 @@ export function TableCard({
       ) : (
         <div className="flex flex-col gap-1 flex-1">
           {/* Guest count & type */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <div className="flex items-center gap-1 text-sm font-semibold text-foreground">
-              <Users className="h-3.5 w-3.5" />
+              <Users className="h-3.5 w-3.5 shrink-0" />
               <span>{reservation!.guestCount}</span>
             </div>
             <div className={cn(
               "flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-md",
               colors?.pill
             )}>
-              <UtensilsCrossed className="h-3 w-3" />
+              <UtensilsCrossed className="h-3 w-3 shrink-0" />
               <span>{getReservationTypeLabel(type!)}</span>
             </div>
             {(reservation!.coffeeOnly || reservation!.coffeeTeaSweet) && (
               <span title={reservation!.coffeeTeaSweet ? "Kaffe/te + sødt" : "Kaffe/te"} className="flex items-center gap-0.5 animate-pulse">
-                <Coffee className="h-3.5 w-3.5 text-amber-400" />
+                <Coffee className="h-3.5 w-3.5 shrink-0 text-amber-400" />
                 {reservation!.coffeeTeaSweet && (
                   <>
                     <span className="text-amber-400 text-[10px] font-bold">+</span>
@@ -245,7 +245,7 @@ export function TableCard({
             )}
             {reservation!.wineMenu && (
               <span title="Vinmenu" className="flex items-center">
-                <Wine className="h-3.5 w-3.5 text-purple-400" />
+                <Wine className="h-3.5 w-3.5 shrink-0 text-purple-400" />
               </span>
             )}
           </div>
