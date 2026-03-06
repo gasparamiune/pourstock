@@ -15,6 +15,7 @@ export interface Reservation {
   coffeeOnly?: boolean;
   coffeeTeaSweet?: boolean;
   wineMenu?: boolean;
+  welcomeDrink?: boolean;
   arrivedAt?: string;
   clearedAt?: string;
   // Course tracking
