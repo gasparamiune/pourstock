@@ -46,6 +46,7 @@ export function ReservationDetailDialog({ open, onOpenChange, tableLabel, reserv
       coffeeOnly,
       coffeeTeaSweet,
       wineMenu,
+      welcomeDrink,
     });
     setEditing(false);
   };
