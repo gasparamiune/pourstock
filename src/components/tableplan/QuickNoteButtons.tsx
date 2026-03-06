@@ -106,6 +106,18 @@ export function QuickNoteButtons({
             Vinmenu
           </Button>
         )}
+        {onWelcomeDrinkChange && (
+          <Button
+            type="button"
+            variant={welcomeDrink ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onWelcomeDrinkChange(!welcomeDrink)}
+            className="text-xs h-8 gap-1.5"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Velkomst
+          </Button>
+        )}
         <Button
           type="button"
           variant={showAllergyInput ? 'secondary' : 'outline'}

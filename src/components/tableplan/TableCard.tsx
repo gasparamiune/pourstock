@@ -249,6 +249,11 @@ export function TableCard({
                 <Wine className="h-3.5 w-3.5 shrink-0 text-purple-400" />
               </span>
             )}
+            {reservation!.welcomeDrink && (
+              <span title="Velkomst" className="flex items-center">
+                <Sparkles className="h-3.5 w-3.5 shrink-0 text-yellow-300" />
+              </span>
+            )}
           </div>
 
           {/* Guest name or room */}
