@@ -97,10 +97,12 @@ export function ReservationDetailDialog({ open, onOpenChange, tableLabel, reserv
               coffeeOnly={coffeeOnly}
               coffeeTeaSweet={coffeeTeaSweet}
               wineMenu={wineMenu}
+              welcomeDrink={welcomeDrink}
               notes={notes}
               onCoffeeOnlyChange={setCoffeeOnly}
               onCoffeeTeaSweetChange={setCoffeeTeaSweet}
               onWineMenuChange={setWineMenu}
+              onWelcomeDrinkChange={setWelcomeDrink}
               onNotesChange={setNotes}
             />
 
