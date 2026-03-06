@@ -18,8 +18,8 @@ interface QuickNoteButtonsProps {
 }
 
 export function QuickNoteButtons({
-  coffeeOnly, coffeeTeaSweet, wineMenu, notes,
-  onCoffeeOnlyChange, onCoffeeTeaSweetChange, onWineMenuChange, onNotesChange,
+  coffeeOnly, coffeeTeaSweet, wineMenu, welcomeDrink, notes,
+  onCoffeeOnlyChange, onCoffeeTeaSweetChange, onWineMenuChange, onWelcomeDrinkChange, onNotesChange,
 }: QuickNoteButtonsProps) {
   const [showAllergyInput, setShowAllergyInput] = useState(false);
   const [allergyText, setAllergyText] = useState('');
