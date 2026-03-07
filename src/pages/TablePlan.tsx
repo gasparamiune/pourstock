@@ -234,10 +234,16 @@ export default function TablePlan() {
         body: { pdfBase64 },
       });
       if (error) throw error;
-      const parsed: Reservation[] = Array.isArray(data) ? data : [];
+      // New response format: { reservationDate, reservations }
+      const reservationDate = data?.reservationDate || '';
+      const parsed: Reservation[] = Array.isArray(data?.reservations) ? data.reservations : (Array.isArray(data) ? data : []);
       const merged = mergeCoffeeEntries(parsed);
       const result = assignTablesToReservations(merged);
       setAssignments(result);
+      // Set plan name from PDF date
+      if (reservationDate) {
+        setPlanName(reservationDate);
+      }
       triggerAutoSave(result);
       toast({
         title: t('tablePlan.extracted'),
