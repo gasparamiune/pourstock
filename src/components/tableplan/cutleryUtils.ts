@@ -51,5 +51,6 @@ export function getReservationTypeLabel(type: ReservationType): string {
     case 'a-la-carte': return 'A la carte';
     case 'bordreservation': return 'Bordres.';
     case 'buff': return 'BUFF';
+    case 'unavailable': return 'Utilgængelig';
   }
 }

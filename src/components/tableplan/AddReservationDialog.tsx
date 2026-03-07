@@ -86,14 +86,24 @@ export function AddReservationDialog({ open, onOpenChange, tableLabel, tableCapa
           <DialogTitle>{t('tablePlan.addReservation')} — {t('tablePlan.table')} {tableLabel}</DialogTitle>
         </DialogHeader>
 
-        <Button
-          variant="outline"
-          onClick={handleMarkAsBuff}
-          className="w-full border-rose-500/40 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 border-dashed"
-        >
-          <ShieldAlert className="h-4 w-4 mr-2" />
-          {t('tablePlan.markAsBuff')} ({tableCapacity}p)
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleMarkAsBuff}
+            className="flex-1 border-rose-500/40 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 border-dashed"
+          >
+            <ShieldAlert className="h-4 w-4 mr-2" />
+            {t('tablePlan.markAsBuff')} ({tableCapacity}p)
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleMarkAsUnavailable}
+            className="flex-1 border-zinc-500/40 text-zinc-400 hover:bg-zinc-500/10 hover:text-zinc-300"
+          >
+            <Ban className="h-4 w-4 mr-2" />
+            {t('tablePlan.markAsUnavailable')}
+          </Button>
+        </div>
 
         {buffOnly ? (
           <DialogFooter>
