@@ -212,7 +212,13 @@ export function AppShell({ children }: AppShellProps) {
                 >
                   <item.icon className={cn("h-5 w-5", isActive && "text-primary")} />
                   <span>{t(item.labelKey)}</span>
-                  {isActive && (
+                  {/* Pending change request badge on Table Plan */}
+                  {item.path === '/table-plan' && isRestaurant && pendingCount > 0 && (
+                    <Badge className="ml-auto bg-amber-500 text-white text-xs px-1.5 py-0 h-5 min-w-[20px] flex items-center justify-center">
+                      {pendingCount}
+                    </Badge>
+                  )}
+                  {isActive && !(item.path === '/table-plan' && pendingCount > 0) && (
                     <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
                   )}
                 </Link>
