@@ -1,4 +1,4 @@
-export type ReservationType = '2-ret' | '3-ret' | '4-ret' | 'a-la-carte' | 'bordreservation' | 'buff';
+export type ReservationType = '2-ret' | '3-ret' | '4-ret' | 'a-la-carte' | 'bordreservation' | 'buff' | 'unavailable';
 
 export interface CutlerySet {
   forks: number;
@@ -38,6 +38,8 @@ export function getReservationTypeColor(type: ReservationType) {
       return { border: 'border-slate-500/60', bg: 'bg-gradient-to-br from-slate-500/10 to-slate-600/5', shadow: 'shadow-slate-500/10', badge: 'bg-slate-500', pill: 'bg-slate-500/20 text-slate-300' };
     case 'buff':
       return { border: 'border-rose-500/60 border-dashed', bg: 'bg-gradient-to-br from-rose-500/10 to-rose-600/5', shadow: 'shadow-rose-500/10', badge: 'bg-rose-500', pill: 'bg-rose-500/20 text-rose-300' };
+    case 'unavailable':
+      return { border: 'border-zinc-500/60', bg: 'bg-gradient-to-br from-zinc-500/15 to-zinc-700/10', shadow: 'shadow-zinc-500/10', badge: 'bg-zinc-600', pill: 'bg-zinc-500/20 text-zinc-300' };
   }
 }
 
@@ -49,5 +51,6 @@ export function getReservationTypeLabel(type: ReservationType): string {
     case 'a-la-carte': return 'A la carte';
     case 'bordreservation': return 'Bordres.';
     case 'buff': return 'BUFF';
+    case 'unavailable': return 'Utilgængelig';
   }
 }
