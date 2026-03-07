@@ -5,6 +5,7 @@ import { FloorPlan, TABLE_LAYOUT, assignTablesToReservations, findLargePartyMerg
 import { PreparationSummary } from '@/components/tableplan/PreparationSummary';
 import { AddReservationDialog } from '@/components/tableplan/AddReservationDialog';
 import { ReservationDetailDialog } from '@/components/tableplan/ReservationDetailDialog';
+import { ChangeRequestSidebar } from '@/components/tableplan/ChangeRequestSidebar';
 import type { Reservation } from '@/components/tableplan/TableCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
