@@ -118,6 +118,9 @@ export default function TablePlan() {
   };
 
   // Auto-save with 500ms debounce for near-instant sync
+  const planNameRef = useRef(planName);
+  useEffect(() => { planNameRef.current = planName; }, [planName]);
+
   const triggerAutoSave = useCallback((newAssignments: Assignments) => {
     if (!autoSaveEnabled || !user) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -125,7 +128,7 @@ export default function TablePlan() {
     saveTimerRef.current = setTimeout(async () => {
       setSaveStatus('saving');
       const today = new Date().toISOString().split('T')[0];
-      const name = planName || `${new Date().toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })} - Aften`;
+      const name = planNameRef.current || `${new Date().toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })} - Aften`;
       lastSaveRef.current = Date.now();
       const { error } = await supabase.from('table_plans').upsert(
         {
