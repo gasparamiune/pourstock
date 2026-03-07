@@ -118,6 +118,9 @@ export default function TablePlan() {
   };
 
   // Auto-save with 500ms debounce for near-instant sync
+  const planNameRef = useRef(planName);
+  useEffect(() => { planNameRef.current = planName; }, [planName]);
+
   const triggerAutoSave = useCallback((newAssignments: Assignments) => {
     if (!autoSaveEnabled || !user) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -125,7 +128,7 @@ export default function TablePlan() {
     saveTimerRef.current = setTimeout(async () => {
       setSaveStatus('saving');
       const today = new Date().toISOString().split('T')[0];
-      const name = planName || `${new Date().toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })} - Aften`;
+      const name = planNameRef.current || `${new Date().toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })} - Aften`;
       lastSaveRef.current = Date.now();
       const { error } = await supabase.from('table_plans').upsert(
         {
@@ -966,20 +969,24 @@ export default function TablePlan() {
               </DropdownMenu>
               <Button variant="outline" onClick={handleReset}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Tilbage
+                {t('tablePlan.back')}
               </Button>
             </>
           )}
         </div>
       </div>
 
-      {/* Plan name input */}
+      {/* Plan name input — auto-saves on change */}
       {hasReservations && !buffOnly && (
         <div className="flex items-center gap-2">
           <Input
             value={planName}
-            onChange={e => setPlanName(e.target.value)}
-            placeholder="Navngiv bordplan..."
+            onChange={e => {
+              setPlanName(e.target.value);
+              // Trigger auto-save with current assignments when name changes
+              if (assignments) triggerAutoSave(assignments);
+            }}
+            placeholder={t('tablePlan.namePlaceholder')}
             className="max-w-xs h-8 text-sm"
           />
         </div>

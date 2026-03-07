@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, Users, UtensilsCrossed, DoorOpen, Unlink, Check, X, Coffee, Timer, RotateCcw, ChefHat, Wine, Sparkles, Flag } from 'lucide-react';
+import { AlertTriangle, Users, UtensilsCrossed, DoorOpen, Unlink, Check, X, Coffee, Timer, RotateCcw, ChefHat, Wine, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getReservationTypeColor, getReservationTypeLabel, type ReservationType } from './cutleryUtils';
 
@@ -165,7 +165,7 @@ export function TableCard({
     { active: !!reservation?.coffeeOnly && !reservation?.coffeeTeaSweet, icon: Coffee, label: 'Kaffe/te', color: 'text-amber-400', extra: false },
     { active: !!reservation?.wineMenu, icon: Wine, label: 'Vinmenu', color: 'text-purple-400', extra: false },
     { active: !!reservation?.welcomeDrink, icon: Sparkles, label: 'Velkomst', color: 'text-yellow-300', extra: false },
-    { active: !!reservation?.flagOnTable, icon: Flag, label: 'Flag på bord', color: 'text-red-400', extra: false },
+    { active: !!reservation?.flagOnTable, icon: null, label: 'Flag på bord', color: 'text-red-400', extra: false, emoji: '🇩🇰' },
   ];
 
   return (
@@ -246,7 +246,11 @@ export function TableCard({
                   item.active ? `${item.color} opacity-100` : "text-white/20 opacity-100"
                 )}
               >
-                <item.icon className="h-[18px] w-[18px]" />
+                {item.emoji ? (
+                  <span className={cn("text-[16px]", !item.active && "opacity-20 grayscale")}>{item.emoji}</span>
+                ) : item.icon ? (
+                  <item.icon className="h-[18px] w-[18px]" />
+                ) : null}
                 {item.extra && (
                   <span className={cn("text-[13px] font-bold", !item.active && "opacity-30")}>🍪</span>
                 )}
