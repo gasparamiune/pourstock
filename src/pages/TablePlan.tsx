@@ -1077,7 +1077,7 @@ export default function TablePlan() {
           reservation={detailReservation}
           onEdit={handleEditReservation}
           onRemove={handleRemoveReservation}
-          readOnly={buffOnly && detailReservation.reservationType !== 'buff'}
+          receptionMode={isReceptionOnly}
         />
       )}
     </div>
