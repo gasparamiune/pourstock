@@ -1044,7 +1044,7 @@ export default function TablePlan() {
             justAddedTables={justAddedTables}
           />
         </div>
-      ) : (
+      ) : assignments ? (
         <>
            <FloorPlan
             assignments={assignments}
@@ -1063,7 +1063,7 @@ export default function TablePlan() {
           />
           {reservationCount > 0 && !buffOnly && <PreparationSummary reservations={allReservations} />}
         </>
-      )}
+      ) : null}
 
       {/* Add reservation dialog */}
       <AddReservationDialog
