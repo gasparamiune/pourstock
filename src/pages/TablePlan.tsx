@@ -125,7 +125,7 @@ export default function TablePlan() {
     saveTimerRef.current = setTimeout(async () => {
       setSaveStatus('saving');
       const today = new Date().toISOString().split('T')[0];
-      const name = `${new Date().toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })} - Aften`;
+      const name = planName || `${new Date().toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })} - Aften`;
       lastSaveRef.current = Date.now();
       const { error } = await supabase.from('table_plans').upsert(
         {
