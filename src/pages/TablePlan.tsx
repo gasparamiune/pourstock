@@ -822,8 +822,11 @@ export default function TablePlan() {
       .gl { font-size: 13px; margin-top: 2px; line-height: 1.3; }
       .tb { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; color: white; margin-left: 3px; vertical-align: middle; }
       .rl { font-size: 14px; color: #222; font-weight: 700; }
-      .notes { color: #c00; font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+      .notes { color: #c00; font-size: 11px; font-weight: 500; white-space: pre-wrap; word-break: break-word; }
       .coffee { color: #b45309; font-size: 11px; }
+      .wine { color: #7c3aed; font-size: 11px; }
+      .welcome { color: #ca8a04; font-size: 11px; }
+      .flag-icon { color: #dc2626; font-size: 11px; }
       .wine { color: #7c3aed; font-size: 11px; }
       .free { color: #ccc; font-size: 13px; text-align: center; padding-top: 8px; }
       @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
