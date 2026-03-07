@@ -229,6 +229,10 @@ export function TableCard({
             </button>
           )}
         </div>
+      ) : isUnavailable ? (
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <span className="text-xs text-muted-foreground text-center font-medium">{t('tablePlan.tableUnavailableMessage')}</span>
+        </div>
       ) : (
         <div className="flex flex-col gap-1 flex-1">
           {/* Icon bar — permanent dark strip */}
