@@ -129,6 +129,7 @@ export function TableCard({
   const isFree = !reservation;
   const hasNotes = reservation?.notes && reservation.notes.trim().length > 0;
   const isBuff = reservation?.reservationType === 'buff';
+  const isUnavailable = reservation?.reservationType === 'unavailable';
   const isArrived = !!reservation?.arrivedAt;
 
   const type = reservation ? getEffectiveType(reservation) : null;
