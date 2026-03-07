@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, Users, UtensilsCrossed, DoorOpen, Unlink, Check, X, Coffee, Timer, RotateCcw, ChefHat, Wine, Sparkles } from 'lucide-react';
+import { AlertTriangle, Users, UtensilsCrossed, DoorOpen, Unlink, Check, X, Coffee, Timer, RotateCcw, ChefHat, Wine, Sparkles, Flag } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getReservationTypeColor, getReservationTypeLabel, type ReservationType } from './cutleryUtils';
 
@@ -16,6 +16,7 @@ export interface Reservation {
   coffeeTeaSweet?: boolean;
   wineMenu?: boolean;
   welcomeDrink?: boolean;
+  flagOnTable?: boolean;
   arrivedAt?: string;
   clearedAt?: string;
   // Course tracking
@@ -157,6 +158,15 @@ export function TableCard({
     ? { gridColumn: `span ${colSpan}` }
     : undefined;
 
+  // Icon bar data
+  const iconItems = [
+    { active: !!reservation?.coffeeTeaSweet, icon: Coffee, label: 'Kaffe/te + sødt', color: 'text-amber-400', extra: true },
+    { active: !!reservation?.coffeeOnly && !reservation?.coffeeTeaSweet, icon: Coffee, label: 'Kaffe/te', color: 'text-amber-400', extra: false },
+    { active: !!reservation?.wineMenu, icon: Wine, label: 'Vinmenu', color: 'text-purple-400', extra: false },
+    { active: !!reservation?.welcomeDrink, icon: Sparkles, label: 'Velkomst', color: 'text-yellow-300', extra: false },
+    { active: !!reservation?.flagOnTable, icon: Flag, label: 'Flag på bord', color: 'text-red-400', extra: false },
+  ];
+
   return (
     <div
       style={style}
@@ -220,6 +230,25 @@ export function TableCard({
         </div>
       ) : (
         <div className="flex flex-col gap-1 flex-1">
+          {/* Icon bar — permanent dark strip */}
+          <div className="flex items-center gap-1.5 bg-black/30 rounded px-1.5 py-0.5 -mx-0.5">
+            {iconItems.map((item, idx) => (
+              <span
+                key={idx}
+                title={item.label}
+                className={cn(
+                  "flex items-center gap-0.5 transition-opacity",
+                  item.active ? `${item.color} opacity-100` : "text-white/20 opacity-100"
+                )}
+              >
+                <item.icon className="h-3 w-3" />
+                {item.extra && item.active && (
+                  <span className="text-[9px] font-bold">🍪</span>
+                )}
+              </span>
+            ))}
+          </div>
+
           {/* Guest count & type */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <div className="flex items-center gap-1 text-sm font-semibold text-foreground">
@@ -233,28 +262,6 @@ export function TableCard({
               <UtensilsCrossed className="h-3 w-3 shrink-0" />
               <span>{getReservationTypeLabel(type!)}</span>
             </div>
-            {reservation!.coffeeTeaSweet && (
-              <span title="Kaffe/te + sødt" className="flex items-center gap-0.5 animate-pulse">
-                <Coffee className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-                <span className="text-amber-400 text-[10px] font-bold">+</span>
-                <span className="text-amber-400 text-sm">🍪</span>
-              </span>
-            )}
-            {reservation!.coffeeOnly && !reservation!.coffeeTeaSweet && (
-              <span title="Kaffe/te" className="flex items-center gap-0.5 animate-pulse">
-                <Coffee className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-              </span>
-            )}
-            {reservation!.wineMenu && (
-              <span title="Vinmenu" className="flex items-center">
-                <Wine className="h-3.5 w-3.5 shrink-0 text-purple-400" />
-              </span>
-            )}
-            {reservation!.welcomeDrink && (
-              <span title="Velkomst" className="flex items-center">
-                <Sparkles className="h-3.5 w-3.5 shrink-0 text-yellow-300" />
-              </span>
-            )}
           </div>
 
           {/* Guest name or room */}
@@ -273,9 +280,9 @@ export function TableCard({
           {/* Notes badge */}
           {hasNotes && (
             <div className="flex items-start gap-1 mt-auto">
-              <div className="flex items-start gap-1.5 text-[11px] bg-destructive/15 text-destructive border border-destructive/25 px-2.5 py-1.5 rounded-lg leading-snug animate-pulse">
+              <div className="flex items-start gap-1.5 text-[11px] bg-destructive/15 text-destructive border border-destructive/25 px-2.5 py-1.5 rounded-lg leading-snug animate-pulse whitespace-pre-wrap break-words">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                <span className="line-clamp-4 font-medium">{reservation!.notes}</span>
+                <span className="font-medium">{reservation!.notes}</span>
               </div>
             </div>
           )}

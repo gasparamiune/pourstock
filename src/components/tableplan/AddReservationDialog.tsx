@@ -31,6 +31,7 @@ export function AddReservationDialog({ open, onOpenChange, tableLabel, tableCapa
   const [coffeeTeaSweet, setCoffeeTeaSweet] = useState(false);
   const [wineMenu, setWineMenu] = useState(false);
   const [welcomeDrink, setWelcomeDrink] = useState(false);
+  const [flagOnTable, setFlagOnTable] = useState(false);
 
   const handleSubmit = () => {
     const reservation: Reservation = {
@@ -45,6 +46,7 @@ export function AddReservationDialog({ open, onOpenChange, tableLabel, tableCapa
       coffeeTeaSweet,
       wineMenu,
       welcomeDrink,
+      flagOnTable,
     };
     onAdd(reservation);
     resetForm();
@@ -74,6 +76,7 @@ export function AddReservationDialog({ open, onOpenChange, tableLabel, tableCapa
     setCoffeeTeaSweet(false);
     setWineMenu(false);
     setWelcomeDrink(false);
+    setFlagOnTable(false);
   };
 
   return (
@@ -141,11 +144,13 @@ export function AddReservationDialog({ open, onOpenChange, tableLabel, tableCapa
                 coffeeTeaSweet={coffeeTeaSweet}
                 wineMenu={wineMenu}
                 welcomeDrink={welcomeDrink}
+                flagOnTable={flagOnTable}
                 notes={notes}
                 onCoffeeOnlyChange={setCoffeeOnly}
                 onCoffeeTeaSweetChange={setCoffeeTeaSweet}
                 onWineMenuChange={setWineMenu}
                 onWelcomeDrinkChange={setWelcomeDrink}
+                onFlagOnTableChange={setFlagOnTable}
                 onNotesChange={setNotes}
               />
 

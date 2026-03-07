@@ -9,30 +9,22 @@ interface QuickNoteButtonsProps {
   coffeeTeaSweet: boolean;
   wineMenu?: boolean;
   welcomeDrink?: boolean;
+  flagOnTable?: boolean;
   notes: string;
   onCoffeeOnlyChange: (val: boolean) => void;
   onCoffeeTeaSweetChange: (val: boolean) => void;
   onWineMenuChange?: (val: boolean) => void;
   onWelcomeDrinkChange?: (val: boolean) => void;
+  onFlagOnTableChange?: (val: boolean) => void;
   onNotesChange: (val: string) => void;
 }
 
 export function QuickNoteButtons({
-  coffeeOnly, coffeeTeaSweet, wineMenu, welcomeDrink, notes,
-  onCoffeeOnlyChange, onCoffeeTeaSweetChange, onWineMenuChange, onWelcomeDrinkChange, onNotesChange,
+  coffeeOnly, coffeeTeaSweet, wineMenu, welcomeDrink, flagOnTable, notes,
+  onCoffeeOnlyChange, onCoffeeTeaSweetChange, onWineMenuChange, onWelcomeDrinkChange, onFlagOnTableChange, onNotesChange,
 }: QuickNoteButtonsProps) {
   const [showAllergyInput, setShowAllergyInput] = useState(false);
   const [allergyText, setAllergyText] = useState('');
-
-  const hasFlag = notes.includes('Flag på bord');
-  const toggleFlag = () => {
-    if (hasFlag) {
-      // Remove both old and new format
-      onNotesChange(notes.replace('🇩🇰 Flag på bord', '').replace('Flag på bord', '').replace(/\n{2,}/g, '\n').trim());
-    } else {
-      onNotesChange(notes ? `${notes}\nFlag på bord` : 'Flag på bord');
-    }
-  };
 
   const toggleCoffee = () => {
     if (coffeeOnly) {
@@ -84,16 +76,18 @@ export function QuickNoteButtons({
           <Coffee className="h-3.5 w-3.5" />
           Kaffe/te
         </Button>
-        <Button
-          type="button"
-          variant={hasFlag ? 'default' : 'outline'}
-          size="sm"
-          onClick={toggleFlag}
-          className="text-xs h-8 gap-1.5"
-        >
-          <Flag className="h-3.5 w-3.5" />
-          Flag på bord
-        </Button>
+        {onFlagOnTableChange && (
+          <Button
+            type="button"
+            variant={flagOnTable ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onFlagOnTableChange(!flagOnTable)}
+            className="text-xs h-8 gap-1.5"
+          >
+            <Flag className="h-3.5 w-3.5" />
+            Flag på bord
+          </Button>
+        )}
         {onWineMenuChange && (
           <Button
             type="button"

@@ -9,7 +9,8 @@ import type { Reservation } from '@/components/tableplan/TableCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, Save, Loader2, FolderOpen, Printer, Undo2, Redo2 } from 'lucide-react';
+import { RotateCcw, Save, Loader2, FolderOpen, Printer, Undo2, Redo2, ArrowLeft } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -36,10 +37,12 @@ export default function TablePlan() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { user, hasDepartment } = useAuth();
-  const buffOnly = hasDepartment('reception') && !hasDepartment('restaurant');
+  const isReceptionOnly = hasDepartment('reception') && !hasDepartment('restaurant');
+  const buffOnly = isReceptionOnly;
   const [assignments, setAssignments] = useState<Assignments | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [planName, setPlanName] = useState('');
   const [savedPlans, setSavedPlans] = useState<any[]>([]);
   const [undoMap, setUndoMap] = useState<Map<string, Reservation>>(new Map());
   const [justAddedTables, setJustAddedTables] = useState<Set<string>>(new Set());
@@ -122,7 +125,7 @@ export default function TablePlan() {
     saveTimerRef.current = setTimeout(async () => {
       setSaveStatus('saving');
       const today = new Date().toISOString().split('T')[0];
-      const name = `${new Date().toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })} - Aften`;
+      const name = planName || `${new Date().toLocaleDateString('da-DK', { day: 'numeric', month: 'short', year: 'numeric' })} - Aften`;
       lastSaveRef.current = Date.now();
       const { error } = await supabase.from('table_plans').upsert(
         {
@@ -231,10 +234,16 @@ export default function TablePlan() {
         body: { pdfBase64 },
       });
       if (error) throw error;
-      const parsed: Reservation[] = Array.isArray(data) ? data : [];
+      // New response format: { reservationDate, reservations }
+      const reservationDate = data?.reservationDate || '';
+      const parsed: Reservation[] = Array.isArray(data?.reservations) ? data.reservations : (Array.isArray(data) ? data : []);
       const merged = mergeCoffeeEntries(parsed);
       const result = assignTablesToReservations(merged);
       setAssignments(result);
+      // Set plan name from PDF date
+      if (reservationDate) {
+        setPlanName(reservationDate);
+      }
       triggerAutoSave(result);
       toast({
         title: t('tablePlan.extracted'),
@@ -813,8 +822,11 @@ export default function TablePlan() {
       .gl { font-size: 13px; margin-top: 2px; line-height: 1.3; }
       .tb { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px; color: white; margin-left: 3px; vertical-align: middle; }
       .rl { font-size: 14px; color: #222; font-weight: 700; }
-      .notes { color: #c00; font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+      .notes { color: #c00; font-size: 11px; font-weight: 500; white-space: pre-wrap; word-break: break-word; }
       .coffee { color: #b45309; font-size: 11px; }
+      .wine { color: #7c3aed; font-size: 11px; }
+      .welcome { color: #ca8a04; font-size: 11px; }
+      .flag-icon { color: #dc2626; font-size: 11px; }
       .wine { color: #7c3aed; font-size: 11px; }
       .free { color: #ccc; font-size: 13px; text-align: center; padding-top: 8px; }
       @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
@@ -857,9 +869,11 @@ export default function TablePlan() {
           html += `<div class="gl">👥${res.guestCount}<span class="tb" style="background:${typeColor}">${res.reservationType || '3-ret'}</span></div>`;
           if (res.guestName) html += `<div class="gl" style="font-weight:700">${res.guestName}</div>`;
           if (res.roomNumber) html += `<div class="rl">Vær.${res.roomNumber}</div>`;
-          if (res.coffeeOnly) html += `<div class="coffee">☕</div>`;
           if (res.coffeeTeaSweet) html += `<div class="coffee">☕+🍪</div>`;
+          else if (res.coffeeOnly) html += `<div class="coffee">☕</div>`;
           if (res.wineMenu) html += `<div class="wine">🍷 Vinmenu</div>`;
+          if (res.welcomeDrink) html += `<div class="welcome">🥂 Velkomst</div>`;
+          if (res.flagOnTable) html += `<div class="flag-icon">🏴 Flag</div>`;
           if (res.notes) html += `<div class="notes">⚠${res.notes}</div>`;
         } else {
           html += `<div class="free">—</div>`;
@@ -951,13 +965,25 @@ export default function TablePlan() {
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button variant="outline" onClick={handleReset}>
-                <RotateCcw className="h-4 w-4 mr-2" />
-                {t('tablePlan.newUpload')}
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Tilbage
               </Button>
             </>
           )}
         </div>
       </div>
+
+      {/* Plan name input */}
+      {hasReservations && !buffOnly && (
+        <div className="flex items-center gap-2">
+          <Input
+            value={planName}
+            onChange={e => setPlanName(e.target.value)}
+            placeholder="Navngiv bordplan..."
+            className="max-w-xs h-8 text-sm"
+          />
+        </div>
+      )}
 
       {!hasReservations && !buffOnly ? (
         <div className="space-y-4">
@@ -1051,7 +1077,7 @@ export default function TablePlan() {
           reservation={detailReservation}
           onEdit={handleEditReservation}
           onRemove={handleRemoveReservation}
-          readOnly={buffOnly && detailReservation.reservationType !== 'buff'}
+          receptionMode={isReceptionOnly}
         />
       )}
     </div>
