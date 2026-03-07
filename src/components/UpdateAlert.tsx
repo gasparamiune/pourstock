@@ -3,21 +3,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Sparkles, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 // Increment this version string every time you publish meaningful updates
-const CURRENT_VERSION = '2026-03-03-v1';
+const CURRENT_VERSION = '2026-03-07-v2';
 
 const UPDATES = [
-  '🏨 Welcome Reception & Housekeeping departments to PourStock!',
-  'New Reception module — room board, guest directory & check-in/out',
-  'New Housekeeping module — status board, task assignments & maintenance reports',
-  'Improved table plan layout for large parties (18+ guests)',
-  'Auto-merge tables when guest count exceeds capacity',
-  'Added wine menu indicator on table cards',
-  'New course timing alerts — visual warning when service is overdue',
-  'Undo & redo support in the table plan',
-  'Reception staff can now manage BUFF tables in the table plan',
-  'Bug fixes and performance improvements',
+  '👋 Velkommen Mohammad & Emilie til PourStock!',
+  '🎯 Ny ikon-bar på bordkort — Kaffe, Vin, Velkomst, Flag synligt med ét blik',
+  '📄 Smart PDF-udtræk — ikoner opdages automatisk fra Køkkenlisten',
+  '🏨 Reception kan nu se alle borde og rette værelsenumre',
+  '🏴 Nyt Flag-ikon tilføjet som selvstændig funktion',
+  '📝 Navngiv din bordplan — eller brug datoen fra Køkkenlisten',
+  '🖨️ Forbedret print-layout — fulde noter, ingen afklipning',
+  '⬅️ "Tilbage"-knap erstatter "Ny upload"',
 ];
 
 interface UpdateAlertProps {
@@ -27,6 +26,7 @@ interface UpdateAlertProps {
 
 export function UpdateAlert({ userName, userId }: UpdateAlertProps) {
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!userId) return;
@@ -39,12 +39,23 @@ export function UpdateAlert({ userName, userId }: UpdateAlertProps) {
         .single();
 
       if (data && (data as any).last_update_seen !== CURRENT_VERSION) {
-        setTimeout(() => setOpen(true), 800);
+        setTimeout(() => {
+          toast({
+            title: '🆕 En ny opdatering er kommet!',
+            description: 'Klik for at se hvad der er nyt.',
+          });
+          setOpen(true);
+        }, 800);
       } else if (!data) {
         setTimeout(() => setOpen(true), 800);
       }
     };
     checkVersion();
+
+    // Re-check on window focus (handles "app already open" scenario)
+    const handleFocus = () => checkVersion();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [userId]);
 
   const handleDismiss = async () => {
@@ -66,11 +77,11 @@ export function UpdateAlert({ userName, userId }: UpdateAlertProps) {
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <DialogTitle className="text-xl">
-              {userName ? `Welcome back, ${userName.split(' ')[0]}!` : 'Welcome back!'}
+              {userName ? `Velkommen tilbage, ${userName.split(' ')[0]}!` : 'Velkommen tilbage!'}
             </DialogTitle>
           </div>
           <DialogDescription className="text-sm text-muted-foreground">
-            Here are the latest updates on PourStock.
+            Her er de seneste opdateringer til PourStock.
           </DialogDescription>
         </DialogHeader>
 
@@ -84,7 +95,7 @@ export function UpdateAlert({ userName, userId }: UpdateAlertProps) {
         </ul>
 
         <Button onClick={handleDismiss} className="w-full">
-          Got it, let's go!
+          Forstået, lad os gå!
         </Button>
       </DialogContent>
     </Dialog>

@@ -19,9 +19,10 @@ interface ReservationDetailDialogProps {
   onEdit: (reservation: Reservation) => void;
   onRemove: () => void;
   readOnly?: boolean;
+  receptionMode?: boolean;
 }
 
-export function ReservationDetailDialog({ open, onOpenChange, tableLabel, reservation, onEdit, onRemove, readOnly = false }: ReservationDetailDialogProps) {
+export function ReservationDetailDialog({ open, onOpenChange, tableLabel, reservation, onEdit, onRemove, readOnly = false, receptionMode = false }: ReservationDetailDialogProps) {
   const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [guestName, setGuestName] = useState(reservation.guestName);
@@ -33,21 +34,32 @@ export function ReservationDetailDialog({ open, onOpenChange, tableLabel, reserv
   const [coffeeTeaSweet, setCoffeeTeaSweet] = useState(reservation.coffeeTeaSweet || false);
   const [wineMenu, setWineMenu] = useState(reservation.wineMenu || false);
   const [welcomeDrink, setWelcomeDrink] = useState(reservation.welcomeDrink || false);
+  const [flagOnTable, setFlagOnTable] = useState(reservation.flagOnTable || false);
+
+  const isBuff = reservation.reservationType === 'buff';
+  // Reception mode: full edit on BUFF, room-number-only on non-BUFF
+  const receptionRoomOnly = receptionMode && !isBuff;
 
   const handleSave = () => {
-    onEdit({
-      ...reservation,
-      guestName,
-      guestCount: parseInt(guestCount) || 2,
-      roomNumber,
-      reservationType,
-      dishCount: reservationType === '2-ret' ? 2 : reservationType === '4-ret' ? 4 : 3,
-      notes,
-      coffeeOnly,
-      coffeeTeaSweet,
-      wineMenu,
-      welcomeDrink,
-    });
+    if (receptionRoomOnly) {
+      // Only save room number change
+      onEdit({ ...reservation, roomNumber });
+    } else {
+      onEdit({
+        ...reservation,
+        guestName,
+        guestCount: parseInt(guestCount) || 2,
+        roomNumber,
+        reservationType,
+        dishCount: reservationType === '2-ret' ? 2 : reservationType === '4-ret' ? 4 : 3,
+        notes,
+        coffeeOnly,
+        coffeeTeaSweet,
+        wineMenu,
+        welcomeDrink,
+        flagOnTable,
+      });
+    }
     setEditing(false);
   };
 
@@ -61,55 +73,67 @@ export function ReservationDetailDialog({ open, onOpenChange, tableLabel, reserv
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('common.edit')} — {t('tablePlan.table')} {tableLabel}</DialogTitle>
+            <DialogTitle>
+              {receptionRoomOnly ? 'Ret værelsenummer' : t('common.edit')} — {t('tablePlan.table')} {tableLabel}
+            </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>{t('tablePlan.guestName')}</Label>
-              <Input value={guestName} onChange={e => setGuestName(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+            {!receptionRoomOnly && (
               <div className="grid gap-2">
-                <Label>{t('tablePlan.guestCount')}</Label>
-                <Input type="number" min="1" max="20" value={guestCount} onChange={e => setGuestCount(e.target.value)} />
+                <Label>{t('tablePlan.guestName')}</Label>
+                <Input value={guestName} onChange={e => setGuestName(e.target.value)} />
               </div>
+            )}
+            <div className={receptionRoomOnly ? "grid gap-2" : "grid grid-cols-2 gap-4"}>
+              {!receptionRoomOnly && (
+                <div className="grid gap-2">
+                  <Label>{t('tablePlan.guestCount')}</Label>
+                  <Input type="number" min="1" max="20" value={guestCount} onChange={e => setGuestCount(e.target.value)} />
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label>{t('tablePlan.roomNumber')}</Label>
                 <Input value={roomNumber} onChange={e => setRoomNumber(e.target.value)} />
               </div>
             </div>
-            <div className="grid gap-2">
-              <Label>{t('tablePlan.type')}</Label>
-              <Select value={reservationType} onValueChange={v => setReservationType(v as ReservationType)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2-ret">2-ret</SelectItem>
-                  <SelectItem value="3-ret">3-ret</SelectItem>
-                  <SelectItem value="4-ret">4-ret</SelectItem>
-                  <SelectItem value="a-la-carte">A la carte</SelectItem>
-                  <SelectItem value="bordreservation">Bordreservation</SelectItem>
-                  <SelectItem value="buff">BUFF</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {!receptionRoomOnly && (
+              <>
+                <div className="grid gap-2">
+                  <Label>{t('tablePlan.type')}</Label>
+                  <Select value={reservationType} onValueChange={v => setReservationType(v as ReservationType)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2-ret">2-ret</SelectItem>
+                      <SelectItem value="3-ret">3-ret</SelectItem>
+                      <SelectItem value="4-ret">4-ret</SelectItem>
+                      <SelectItem value="a-la-carte">A la carte</SelectItem>
+                      <SelectItem value="bordreservation">Bordreservation</SelectItem>
+                      <SelectItem value="buff">BUFF</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <QuickNoteButtons
-              coffeeOnly={coffeeOnly}
-              coffeeTeaSweet={coffeeTeaSweet}
-              wineMenu={wineMenu}
-              welcomeDrink={welcomeDrink}
-              notes={notes}
-              onCoffeeOnlyChange={setCoffeeOnly}
-              onCoffeeTeaSweetChange={setCoffeeTeaSweet}
-              onWineMenuChange={setWineMenu}
-              onWelcomeDrinkChange={setWelcomeDrink}
-              onNotesChange={setNotes}
-            />
+                <QuickNoteButtons
+                  coffeeOnly={coffeeOnly}
+                  coffeeTeaSweet={coffeeTeaSweet}
+                  wineMenu={wineMenu}
+                  welcomeDrink={welcomeDrink}
+                  flagOnTable={flagOnTable}
+                  notes={notes}
+                  onCoffeeOnlyChange={setCoffeeOnly}
+                  onCoffeeTeaSweetChange={setCoffeeTeaSweet}
+                  onWineMenuChange={setWineMenu}
+                  onWelcomeDrinkChange={setWelcomeDrink}
+                  onFlagOnTableChange={setFlagOnTable}
+                  onNotesChange={setNotes}
+                />
 
-            <div className="grid gap-2">
-              <Label>{t('tablePlan.notes')}</Label>
-              <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
-            </div>
+                <div className="grid gap-2">
+                  <Label>{t('tablePlan.notes')}</Label>
+                  <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditing(false)}>{t('common.cancel')}</Button>
@@ -145,18 +169,20 @@ export function ReservationDetailDialog({ open, onOpenChange, tableLabel, reserv
             </div>
           )}
           {reservation.notes && (
-            <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+            <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg whitespace-pre-wrap break-words">
               {reservation.notes}
             </div>
           )}
         </div>
         {!readOnly && (
           <DialogFooter className="gap-2">
-            <Button variant="destructive" size="sm" onClick={handleRemove}>
-              <Trash2 className="h-4 w-4 mr-1" /> {t('tablePlan.remove')}
-            </Button>
+            {(!receptionMode || isBuff) && (
+              <Button variant="destructive" size="sm" onClick={handleRemove}>
+                <Trash2 className="h-4 w-4 mr-1" /> {t('tablePlan.remove')}
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-              <Pencil className="h-4 w-4 mr-1" /> {t('common.edit')}
+              <Pencil className="h-4 w-4 mr-1" /> {receptionRoomOnly ? 'Ret vær.nr.' : t('common.edit')}
             </Button>
           </DialogFooter>
         )}
