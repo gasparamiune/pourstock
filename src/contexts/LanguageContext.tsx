@@ -591,6 +591,8 @@ const translations: Record<Language, Record<string, string>> = {
     'tablePlan.unmerge': 'Opdel',
     'tablePlan.markAsBuff': 'Markér som BUFF',
     'tablePlan.markAsUnavailable': 'Markér som utilgængelig',
+    'tablePlan.tableUnavailableMessage': 'Dette bord er markeret som utilgængeligt',
+    'tablePlan.makeAvailable': 'Gør tilgængelig',
     'tablePlan.buff': 'BUFF',
     'tablePlan.arrived': 'Ankommet',
     'tablePlan.clearTable': 'Ryd',

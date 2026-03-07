@@ -145,6 +145,27 @@ export function ReservationDetailDialog({ open, onOpenChange, tableLabel, reserv
     );
   }
 
+  if (isUnavailable) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('tablePlan.table')} {tableLabel}</DialogTitle>
+          </DialogHeader>
+          <div className="py-6 text-center text-muted-foreground">
+            {t('tablePlan.tableUnavailableMessage')}
+          </div>
+          {!readOnly && (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
+              <Button onClick={handleRemove}>{t('tablePlan.makeAvailable')}</Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
