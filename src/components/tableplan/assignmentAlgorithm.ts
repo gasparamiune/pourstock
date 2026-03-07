@@ -373,7 +373,6 @@ export function assignTablesToReservations(reservations: Reservation[]): Assignm
           for (const t of groups[gi].tables) {
             usedTables.add(t.id);
             assignedTypes.set(t.id, resType);
-            assignmentOrder.push(t.id);
           }
           rem -= perGroup;
         }
