@@ -639,6 +639,20 @@ const translations: Record<Language, Record<string, string>> = {
     'tablePlan.printEmpty': 'Udskriv tom plan',
     'tablePlan.printWithRes': 'Udskriv med reservationer',
 
+    // Change Requests
+    'changeRequest.title': 'Ændringsanmodninger',
+    'changeRequest.pending': 'afventer',
+    'changeRequest.noPending': 'Ingen ventende ændringer',
+    'changeRequest.accept': 'Godkend',
+    'changeRequest.decline': 'Afvis',
+    'changeRequest.accepted': 'Ændring godkendt',
+    'changeRequest.declined': 'Ændring afvist',
+    'changeRequest.sent': 'Ændring sendt til restaurant',
+    'changeRequest.resolved': 'Behandlede',
+    'changeRequest.pendingNotification': 'ventende ændringsanmodning(er) på bordplanen',
+    'changeRequest.viewNow': 'Se nu →',
+    'changeRequest.gotIt': 'Forstået',
+
     // Language
     'language.english': 'English',
     'language.danish': 'Dansk',
