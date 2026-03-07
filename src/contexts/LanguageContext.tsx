@@ -231,7 +231,7 @@ const translations: Record<Language, Record<string, string>> = {
     'tablePlan.merge': 'Merge tables',
     'tablePlan.unmerge': 'Unmerge',
     'tablePlan.markAsBuff': 'Mark as BUFF',
-    'tablePlan.markAsUnavailable': 'Unavailable',
+    'tablePlan.markAsUnavailable': 'Mark as unavailable',
     'tablePlan.buff': 'BUFF',
     'tablePlan.arrived': 'Arrived',
     'tablePlan.clearTable': 'Clear',
