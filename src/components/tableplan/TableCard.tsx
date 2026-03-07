@@ -247,8 +247,10 @@ export function TableCard({
                   item.active ? `${item.color} opacity-100` : "text-white/20 opacity-100"
                 )}
               >
-                {item.emoji ? (
-                  <span className={cn("text-[16px]", !item.active && "opacity-20 grayscale")}>{item.emoji}</span>
+                {item.flagComponent ? (
+                  <span className={cn("transition-opacity", !item.active && "opacity-20 grayscale")}>
+                    <DanishFlag size={18} />
+                  </span>
                 ) : item.icon ? (
                   <item.icon className="h-[18px] w-[18px]" />
                 ) : null}
