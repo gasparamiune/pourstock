@@ -1044,7 +1044,7 @@ export default function TablePlan() {
             justAddedTables={justAddedTables}
           />
         </div>
-      ) : (
+      ) : assignments ? (
         <>
            <FloorPlan
             assignments={assignments}
