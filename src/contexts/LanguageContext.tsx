@@ -264,6 +264,20 @@ const translations: Record<Language, Record<string, string>> = {
     'tablePlan.printEmpty': 'Print empty plan',
     'tablePlan.printWithRes': 'Print with reservations',
 
+    // Change Requests
+    'changeRequest.title': 'Change Requests',
+    'changeRequest.pending': 'pending',
+    'changeRequest.noPending': 'No pending changes',
+    'changeRequest.accept': 'Accept',
+    'changeRequest.decline': 'Decline',
+    'changeRequest.accepted': 'Change accepted',
+    'changeRequest.declined': 'Change declined',
+    'changeRequest.sent': 'Change sent to restaurant',
+    'changeRequest.resolved': 'Resolved',
+    'changeRequest.pendingNotification': 'pending change request(s) on the table plan',
+    'changeRequest.viewNow': 'View now →',
+    'changeRequest.gotIt': 'Got it',
+
     // Language
     'language.english': 'English',
     'language.danish': 'Dansk',
@@ -624,6 +638,20 @@ const translations: Record<Language, Record<string, string>> = {
     'tablePlan.back': 'Tilbage',
     'tablePlan.printEmpty': 'Udskriv tom plan',
     'tablePlan.printWithRes': 'Udskriv med reservationer',
+
+    // Change Requests
+    'changeRequest.title': 'Ændringsanmodninger',
+    'changeRequest.pending': 'afventer',
+    'changeRequest.noPending': 'Ingen ventende ændringer',
+    'changeRequest.accept': 'Godkend',
+    'changeRequest.decline': 'Afvis',
+    'changeRequest.accepted': 'Ændring godkendt',
+    'changeRequest.declined': 'Ændring afvist',
+    'changeRequest.sent': 'Ændring sendt til restaurant',
+    'changeRequest.resolved': 'Behandlede',
+    'changeRequest.pendingNotification': 'ventende ændringsanmodning(er) på bordplanen',
+    'changeRequest.viewNow': 'Se nu →',
+    'changeRequest.gotIt': 'Forstået',
 
     // Language
     'language.english': 'English',

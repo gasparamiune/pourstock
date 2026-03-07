@@ -5,6 +5,7 @@ import { FloorPlan, TABLE_LAYOUT, assignTablesToReservations, findLargePartyMerg
 import { PreparationSummary } from '@/components/tableplan/PreparationSummary';
 import { AddReservationDialog } from '@/components/tableplan/AddReservationDialog';
 import { ReservationDetailDialog } from '@/components/tableplan/ReservationDetailDialog';
+import { ChangeRequestSidebar } from '@/components/tableplan/ChangeRequestSidebar';
 import type { Reservation } from '@/components/tableplan/TableCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -36,9 +37,12 @@ function deserializeAssignments(obj: any): Assignments {
 export default function TablePlan() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { user, hasDepartment } = useAuth();
-  const isReceptionOnly = hasDepartment('reception') && !hasDepartment('restaurant');
+  const { user, hasDepartment, isAdmin } = useAuth();
+  const isReceptionOnly = hasDepartment('reception') && !hasDepartment('restaurant') && !isAdmin;
+  const isRestaurant = isAdmin || hasDepartment('restaurant');
   const buffOnly = isReceptionOnly;
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const today = new Date().toISOString().split('T')[0];
   const [assignments, setAssignments] = useState<Assignments | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -456,6 +460,24 @@ export default function TablePlan() {
   const handleAddReservation = useCallback((reservation: Reservation) => {
     if (!assignments || !addDialogTable) return;
 
+    // Reception-only: intercept and send as change request
+    if (isReceptionOnly && user) {
+      const isBuff = reservation.reservationType === 'buff';
+      supabase.from('table_plan_changes').insert({
+        plan_date: today,
+        table_id: addDialogTable,
+        change_type: isBuff ? 'add_buff' : 'add_reservation',
+        change_data: reservation as any,
+        requested_by: user.id,
+      } as any).then(({ error }) => {
+        if (!error) {
+          toast({ title: t('changeRequest.sent') || 'Ændring sendt til restaurant' });
+        }
+      });
+      setAddDialogTable(null);
+      return;
+    }
+
     // Large party auto-split: if >8 guests, find N adjacent row-merges
     if (reservation.guestCount > 8) {
       updateAssignments(prev => {
@@ -571,10 +593,31 @@ export default function TablePlan() {
       return { ...prev, singles: newSingles };
     });
     setAddDialogTable(null);
-  }, [assignments, addDialogTable, updateAssignments, markJustAdded]);
+  }, [assignments, addDialogTable, updateAssignments, markJustAdded, isReceptionOnly, user, today, toast, t]);
 
   const handleEditReservation = useCallback((reservation: Reservation) => {
     if (!assignments || !detailDialogTable) return;
+
+    // Reception-only: intercept as change request
+    if (isReceptionOnly && user) {
+      const existing = findReservationForTable(detailDialogTable);
+      const isBuff = reservation.reservationType === 'buff';
+      supabase.from('table_plan_changes').insert({
+        plan_date: today,
+        table_id: detailDialogTable,
+        change_type: isBuff ? 'edit_buff' : 'edit_reservation',
+        change_data: reservation as any,
+        previous_data: existing as any,
+        requested_by: user.id,
+      } as any).then(({ error }) => {
+        if (!error) {
+          toast({ title: t('changeRequest.sent') || 'Ændring sendt til restaurant' });
+        }
+      });
+      setDetailDialogTable(null);
+      return;
+    }
+
     updateAssignments(prev => {
       if (!prev) return prev;
       for (let i = 0; i < prev.merges.length; i++) {
@@ -589,10 +632,31 @@ export default function TablePlan() {
       return { ...prev, singles: newSingles };
     });
     setDetailDialogTable(null);
-  }, [assignments, detailDialogTable, updateAssignments]);
+  }, [assignments, detailDialogTable, updateAssignments, isReceptionOnly, user, today, toast, t, findReservationForTable]);
 
   const handleRemoveReservation = useCallback(() => {
     if (!assignments || !detailDialogTable) return;
+
+    // Reception-only: intercept as change request
+    if (isReceptionOnly && user) {
+      const existing = findReservationForTable(detailDialogTable);
+      const isBuff = existing?.reservationType === 'buff';
+      supabase.from('table_plan_changes').insert({
+        plan_date: today,
+        table_id: detailDialogTable,
+        change_type: isBuff ? 'remove_buff' : 'remove_reservation',
+        change_data: {} as any,
+        previous_data: existing as any,
+        requested_by: user.id,
+      } as any).then(({ error }) => {
+        if (!error) {
+          toast({ title: t('changeRequest.sent') || 'Ændring sendt til restaurant' });
+        }
+      });
+      setDetailDialogTable(null);
+      return;
+    }
+
     updateAssignments(prev => {
       if (!prev) return prev;
       // Check if in a merge group — auto-unmerge (dissolve) on remove
@@ -608,7 +672,56 @@ export default function TablePlan() {
       return { ...prev, singles: newSingles };
     });
     setDetailDialogTable(null);
-  }, [assignments, detailDialogTable, updateAssignments]);
+  }, [assignments, detailDialogTable, updateAssignments, isReceptionOnly, user, today, toast, t, findReservationForTable]);
+
+  // Handle accepted change request — apply the change to live assignments
+  const handleAcceptChange = useCallback((change: any) => {
+    const { change_type, table_id, change_data } = change;
+    if (change_type === 'add_reservation' || change_type === 'add_buff') {
+      updateAssignments(prev => {
+        if (!prev) return prev;
+        const newSingles = new Map(prev.singles);
+        // Check if in merge
+        for (let i = 0; i < prev.merges.length; i++) {
+          if (prev.merges[i].tables.some(t => t.id === table_id)) {
+            const newMerges = [...prev.merges];
+            newMerges[i] = { ...newMerges[i], reservation: change_data as Reservation };
+            return { ...prev, merges: newMerges };
+          }
+        }
+        newSingles.set(table_id, change_data as Reservation);
+        return { ...prev, singles: newSingles };
+      });
+    } else if (change_type === 'edit_reservation' || change_type === 'edit_buff') {
+      updateAssignments(prev => {
+        if (!prev) return prev;
+        for (let i = 0; i < prev.merges.length; i++) {
+          if (prev.merges[i].tables.some(t => t.id === table_id)) {
+            const newMerges = [...prev.merges];
+            newMerges[i] = { ...newMerges[i], reservation: change_data as Reservation };
+            return { ...prev, merges: newMerges };
+          }
+        }
+        const newSingles = new Map(prev.singles);
+        newSingles.set(table_id, change_data as Reservation);
+        return { ...prev, singles: newSingles };
+      });
+    } else if (change_type === 'remove_reservation' || change_type === 'remove_buff') {
+      updateAssignments(prev => {
+        if (!prev) return prev;
+        for (let i = 0; i < prev.merges.length; i++) {
+          if (prev.merges[i].tables.some(t => t.id === table_id)) {
+            const newMerges = [...prev.merges];
+            newMerges.splice(i, 1);
+            return { ...prev, merges: newMerges };
+          }
+        }
+        const newSingles = new Map(prev.singles);
+        newSingles.delete(table_id);
+        return { ...prev, singles: newSingles };
+      });
+    }
+  }, [updateAssignments]);
 
   // Service mode callbacks
   const onMarkArrived = useCallback((tableId: string) => {
@@ -1027,42 +1140,62 @@ export default function TablePlan() {
           )}
         </div>
       ) : reservationCount === 0 && assignments && assignments.merges.length === 0 ? (
-        <div className="space-y-6">
-          <FloorPlan
-            assignments={assignments}
-            onMoveReservation={buffOnly ? () => {} : onMoveReservation}
-            onMerge={buffOnly ? () => {} : onMerge}
-            onUnmerge={buffOnly ? () => {} : onUnmerge}
-            onClickFreeTable={onClickFreeTable}
-            onClickOccupiedTable={onClickOccupiedTable}
-            onMarkArrived={buffOnly ? undefined : onMarkArrived}
-            onClearTable={buffOnly ? undefined : onClearTable}
-            onClearAll={buffOnly ? undefined : onClearAll}
-            onAdvanceCourse={buffOnly ? undefined : onAdvanceCourse}
-            undoMap={buffOnly ? new Map() : undoMap}
-            onUndo={buffOnly ? undefined : onUndoClear}
-            justAddedTables={justAddedTables}
-          />
+        <div className="flex gap-0">
+          {isRestaurant && (
+            <ChangeRequestSidebar
+              planDate={today}
+              onAccept={handleAcceptChange}
+              collapsed={sidebarCollapsed}
+              onToggle={() => setSidebarCollapsed(p => !p)}
+            />
+          )}
+          <div className="flex-1 space-y-6 min-w-0">
+            <FloorPlan
+              assignments={assignments}
+              onMoveReservation={buffOnly ? () => {} : onMoveReservation}
+              onMerge={buffOnly ? () => {} : onMerge}
+              onUnmerge={buffOnly ? () => {} : onUnmerge}
+              onClickFreeTable={onClickFreeTable}
+              onClickOccupiedTable={onClickOccupiedTable}
+              onMarkArrived={buffOnly ? undefined : onMarkArrived}
+              onClearTable={buffOnly ? undefined : onClearTable}
+              onClearAll={buffOnly ? undefined : onClearAll}
+              onAdvanceCourse={buffOnly ? undefined : onAdvanceCourse}
+              undoMap={buffOnly ? new Map() : undoMap}
+              onUndo={buffOnly ? undefined : onUndoClear}
+              justAddedTables={justAddedTables}
+            />
+          </div>
         </div>
       ) : assignments ? (
-        <>
-           <FloorPlan
-            assignments={assignments}
-            onMoveReservation={buffOnly ? () => {} : onMoveReservation}
-            onMerge={buffOnly ? () => {} : onMerge}
-            onUnmerge={buffOnly ? () => {} : onUnmerge}
-            onClickFreeTable={onClickFreeTable}
-            onClickOccupiedTable={onClickOccupiedTable}
-            onMarkArrived={buffOnly ? undefined : onMarkArrived}
-            onClearTable={buffOnly ? undefined : onClearTable}
-            onClearAll={buffOnly ? undefined : onClearAll}
-            onAdvanceCourse={buffOnly ? undefined : onAdvanceCourse}
-            undoMap={buffOnly ? new Map() : undoMap}
-            onUndo={buffOnly ? undefined : onUndoClear}
-            justAddedTables={justAddedTables}
-          />
-          {reservationCount > 0 && !buffOnly && <PreparationSummary reservations={allReservations} />}
-        </>
+        <div className="flex gap-0">
+          {isRestaurant && (
+            <ChangeRequestSidebar
+              planDate={today}
+              onAccept={handleAcceptChange}
+              collapsed={sidebarCollapsed}
+              onToggle={() => setSidebarCollapsed(p => !p)}
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <FloorPlan
+              assignments={assignments}
+              onMoveReservation={buffOnly ? () => {} : onMoveReservation}
+              onMerge={buffOnly ? () => {} : onMerge}
+              onUnmerge={buffOnly ? () => {} : onUnmerge}
+              onClickFreeTable={onClickFreeTable}
+              onClickOccupiedTable={onClickOccupiedTable}
+              onMarkArrived={buffOnly ? undefined : onMarkArrived}
+              onClearTable={buffOnly ? undefined : onClearTable}
+              onClearAll={buffOnly ? undefined : onClearAll}
+              onAdvanceCourse={buffOnly ? undefined : onAdvanceCourse}
+              undoMap={buffOnly ? new Map() : undoMap}
+              onUndo={buffOnly ? undefined : onUndoClear}
+              justAddedTables={justAddedTables}
+            />
+            {reservationCount > 0 && !buffOnly && <PreparationSummary reservations={allReservations} />}
+          </div>
+        </div>
       ) : null}
 
       {/* Add reservation dialog */}
