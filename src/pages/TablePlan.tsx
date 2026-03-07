@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAppSidebar } from '@/contexts/SidebarContext';
 import { PdfUploader } from '@/components/tableplan/PdfUploader';
 import { FloorPlan, TABLE_LAYOUT, assignTablesToReservations, findLargePartyMerges, type Assignments, type MergeGroup } from '@/components/tableplan/FloorPlan';
 import { PreparationSummary } from '@/components/tableplan/PreparationSummary';
@@ -38,6 +39,7 @@ export default function TablePlan() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { user, hasDepartment, isAdmin } = useAuth();
+  const { closeDesktop, openDesktop } = useAppSidebar();
   const isReceptionOnly = hasDepartment('reception') && !hasDepartment('restaurant') && !isAdmin;
   const isRestaurant = isAdmin || hasDepartment('restaurant');
   const buffOnly = isReceptionOnly;
@@ -60,6 +62,20 @@ export default function TablePlan() {
   // Dialog state
   const [addDialogTable, setAddDialogTable] = useState<string | null>(null);
   const [detailDialogTable, setDetailDialogTable] = useState<string | null>(null);
+
+  // Auto-close main sidebar when a plan is loaded, re-open when going back
+  useEffect(() => {
+    if (assignments) {
+      closeDesktop();
+    } else {
+      openDesktop();
+    }
+  }, [assignments !== null]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-open sidebar on unmount (leaving table plan page)
+  useEffect(() => {
+    return () => { openDesktop(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-save preference
   const autoSaveEnabled = localStorage.getItem('pourstock-autosave-tableplan') !== 'false';

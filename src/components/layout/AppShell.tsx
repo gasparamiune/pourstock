@@ -1,5 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { UpdateAlert } from '@/components/UpdateAlert';
+import { useAppSidebar } from '@/contexts/SidebarContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -65,7 +66,8 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // mobile
+  const { desktopOpen, toggleDesktop } = useAppSidebar();
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, roles, signOut, isAdmin, isManager, hasDepartment } = useAuth();
@@ -147,8 +149,8 @@ export function AppShell({ children }: AppShellProps) {
       <aside 
         className={cn(
           "fixed top-0 left-0 h-full w-72 bg-sidebar border-r border-sidebar-border z-50 transition-transform duration-300",
-          "lg:translate-x-0",
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          desktopOpen ? "lg:translate-x-0" : "lg:-translate-x-full",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex flex-col h-full">
@@ -276,7 +278,21 @@ export function AppShell({ children }: AppShellProps) {
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-72 pt-16 lg:pt-0 min-h-screen">
+      <main className={cn(
+        "pt-16 lg:pt-0 min-h-screen transition-[margin] duration-300",
+        desktopOpen ? "lg:ml-72" : "lg:ml-0"
+      )}>
+        {/* Desktop toggle button — always visible */}
+        <div className="hidden lg:flex fixed top-3 z-50 transition-[left] duration-300" style={{ left: desktopOpen ? '18.5rem' : '0.75rem' }}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleDesktop}
+            className="h-8 w-8 rounded-lg bg-card/80 backdrop-blur-sm border border-border shadow-sm hover:bg-card"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+        </div>
         {/* Persistent notification banner for pending changes */}
         {showPendingBanner && (
           <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-3 flex items-center justify-between">
