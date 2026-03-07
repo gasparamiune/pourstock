@@ -66,8 +66,8 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // mobile
+  const { desktopOpen, toggleDesktop } = useAppSidebar();
   const navigate = useNavigate();
   const { user, profile, roles, signOut, isAdmin, isManager, hasDepartment } = useAuth();
   const { t } = useLanguage();
