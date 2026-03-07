@@ -246,7 +246,11 @@ export function TableCard({
                   item.active ? `${item.color} opacity-100` : "text-white/20 opacity-100"
                 )}
               >
-                <item.icon className="h-[18px] w-[18px]" />
+                {item.emoji ? (
+                  <span className={cn("text-[16px]", !item.active && "opacity-20 grayscale")}>{item.emoji}</span>
+                ) : item.icon ? (
+                  <item.icon className="h-[18px] w-[18px]" />
+                ) : null}
                 {item.extra && (
                   <span className={cn("text-[13px] font-bold", !item.active && "opacity-30")}>🍪</span>
                 )}

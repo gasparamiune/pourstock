@@ -966,7 +966,7 @@ export default function TablePlan() {
               </DropdownMenu>
               <Button variant="outline" onClick={handleReset}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Tilbage
+                {t('tablePlan.back')}
               </Button>
             </>
           )}
