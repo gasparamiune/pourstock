@@ -1,4 +1,4 @@
-export type ReservationType = '2-ret' | '3-ret' | '4-ret' | 'a-la-carte' | 'bordreservation' | 'buff';
+export type ReservationType = '2-ret' | '3-ret' | '4-ret' | 'a-la-carte' | 'bordreservation' | 'buff' | 'unavailable';
 
 export interface CutlerySet {
   forks: number;
