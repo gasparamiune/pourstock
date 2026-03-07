@@ -37,7 +37,8 @@ export default function TablePlan() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { user, hasDepartment } = useAuth();
-  const buffOnly = hasDepartment('reception') && !hasDepartment('restaurant');
+  const isReceptionOnly = hasDepartment('reception') && !hasDepartment('restaurant');
+  const buffOnly = isReceptionOnly;
   const [assignments, setAssignments] = useState<Assignments | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
