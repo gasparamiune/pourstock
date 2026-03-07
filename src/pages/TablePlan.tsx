@@ -597,6 +597,27 @@ export default function TablePlan() {
 
   const handleEditReservation = useCallback((reservation: Reservation) => {
     if (!assignments || !detailDialogTable) return;
+
+    // Reception-only: intercept as change request
+    if (isReceptionOnly && user) {
+      const existing = findReservationForTable(detailDialogTable);
+      const isBuff = reservation.reservationType === 'buff';
+      supabase.from('table_plan_changes').insert({
+        plan_date: today,
+        table_id: detailDialogTable,
+        change_type: isBuff ? 'edit_buff' : 'edit_reservation',
+        change_data: reservation as any,
+        previous_data: existing as any,
+        requested_by: user.id,
+      } as any).then(({ error }) => {
+        if (!error) {
+          toast({ title: t('changeRequest.sent') || 'Ændring sendt til restaurant' });
+        }
+      });
+      setDetailDialogTable(null);
+      return;
+    }
+
     updateAssignments(prev => {
       if (!prev) return prev;
       for (let i = 0; i < prev.merges.length; i++) {
@@ -611,10 +632,31 @@ export default function TablePlan() {
       return { ...prev, singles: newSingles };
     });
     setDetailDialogTable(null);
-  }, [assignments, detailDialogTable, updateAssignments]);
+  }, [assignments, detailDialogTable, updateAssignments, isReceptionOnly, user, today, toast, t, findReservationForTable]);
 
   const handleRemoveReservation = useCallback(() => {
     if (!assignments || !detailDialogTable) return;
+
+    // Reception-only: intercept as change request
+    if (isReceptionOnly && user) {
+      const existing = findReservationForTable(detailDialogTable);
+      const isBuff = existing?.reservationType === 'buff';
+      supabase.from('table_plan_changes').insert({
+        plan_date: today,
+        table_id: detailDialogTable,
+        change_type: isBuff ? 'remove_buff' : 'remove_reservation',
+        change_data: {} as any,
+        previous_data: existing as any,
+        requested_by: user.id,
+      } as any).then(({ error }) => {
+        if (!error) {
+          toast({ title: t('changeRequest.sent') || 'Ændring sendt til restaurant' });
+        }
+      });
+      setDetailDialogTable(null);
+      return;
+    }
+
     updateAssignments(prev => {
       if (!prev) return prev;
       // Check if in a merge group — auto-unmerge (dissolve) on remove
@@ -630,7 +672,56 @@ export default function TablePlan() {
       return { ...prev, singles: newSingles };
     });
     setDetailDialogTable(null);
-  }, [assignments, detailDialogTable, updateAssignments]);
+  }, [assignments, detailDialogTable, updateAssignments, isReceptionOnly, user, today, toast, t, findReservationForTable]);
+
+  // Handle accepted change request — apply the change to live assignments
+  const handleAcceptChange = useCallback((change: any) => {
+    const { change_type, table_id, change_data } = change;
+    if (change_type === 'add_reservation' || change_type === 'add_buff') {
+      updateAssignments(prev => {
+        if (!prev) return prev;
+        const newSingles = new Map(prev.singles);
+        // Check if in merge
+        for (let i = 0; i < prev.merges.length; i++) {
+          if (prev.merges[i].tables.some(t => t.id === table_id)) {
+            const newMerges = [...prev.merges];
+            newMerges[i] = { ...newMerges[i], reservation: change_data as Reservation };
+            return { ...prev, merges: newMerges };
+          }
+        }
+        newSingles.set(table_id, change_data as Reservation);
+        return { ...prev, singles: newSingles };
+      });
+    } else if (change_type === 'edit_reservation' || change_type === 'edit_buff') {
+      updateAssignments(prev => {
+        if (!prev) return prev;
+        for (let i = 0; i < prev.merges.length; i++) {
+          if (prev.merges[i].tables.some(t => t.id === table_id)) {
+            const newMerges = [...prev.merges];
+            newMerges[i] = { ...newMerges[i], reservation: change_data as Reservation };
+            return { ...prev, merges: newMerges };
+          }
+        }
+        const newSingles = new Map(prev.singles);
+        newSingles.set(table_id, change_data as Reservation);
+        return { ...prev, singles: newSingles };
+      });
+    } else if (change_type === 'remove_reservation' || change_type === 'remove_buff') {
+      updateAssignments(prev => {
+        if (!prev) return prev;
+        for (let i = 0; i < prev.merges.length; i++) {
+          if (prev.merges[i].tables.some(t => t.id === table_id)) {
+            const newMerges = [...prev.merges];
+            newMerges.splice(i, 1);
+            return { ...prev, merges: newMerges };
+          }
+        }
+        const newSingles = new Map(prev.singles);
+        newSingles.delete(table_id);
+        return { ...prev, singles: newSingles };
+      });
+    }
+  }, [updateAssignments]);
 
   // Service mode callbacks
   const onMarkArrived = useCallback((tableId: string) => {
