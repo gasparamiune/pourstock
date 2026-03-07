@@ -66,16 +66,6 @@ export function QuickNoteButtons({
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          variant={coffeeOnly ? 'default' : 'outline'}
-          size="sm"
-          onClick={toggleCoffee}
-          className="text-xs h-8 gap-1.5"
-        >
-          <Coffee className="h-3.5 w-3.5" />
-          Kaffe/te
-        </Button>
-        <Button
-          type="button"
           variant={coffeeTeaSweet ? 'default' : 'outline'}
           size="sm"
           onClick={toggleCoffeeSweet}
@@ -83,6 +73,16 @@ export function QuickNoteButtons({
         >
           <Coffee className="h-3.5 w-3.5" />
           Kaffe/te + sødt
+        </Button>
+        <Button
+          type="button"
+          variant={coffeeOnly ? 'default' : 'outline'}
+          size="sm"
+          onClick={toggleCoffee}
+          className="text-xs h-8 gap-1.5"
+        >
+          <Coffee className="h-3.5 w-3.5" />
+          Kaffe/te
         </Button>
         <Button
           type="button"

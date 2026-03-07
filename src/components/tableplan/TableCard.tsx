@@ -233,15 +233,16 @@ export function TableCard({
               <UtensilsCrossed className="h-3 w-3 shrink-0" />
               <span>{getReservationTypeLabel(type!)}</span>
             </div>
-            {(reservation!.coffeeOnly || reservation!.coffeeTeaSweet) && (
-              <span title={reservation!.coffeeTeaSweet ? "Kaffe/te + sødt" : "Kaffe/te"} className="flex items-center gap-0.5 animate-pulse">
+            {reservation!.coffeeTeaSweet && (
+              <span title="Kaffe/te + sødt" className="flex items-center gap-0.5 animate-pulse">
                 <Coffee className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-                {reservation!.coffeeTeaSweet && (
-                  <>
-                    <span className="text-amber-400 text-[10px] font-bold">+</span>
-                    <span className="text-amber-400 text-sm">🍪</span>
-                  </>
-                )}
+                <span className="text-amber-400 text-[10px] font-bold">+</span>
+                <span className="text-amber-400 text-sm">🍪</span>
+              </span>
+            )}
+            {reservation!.coffeeOnly && !reservation!.coffeeTeaSweet && (
+              <span title="Kaffe/te" className="flex items-center gap-0.5 animate-pulse">
+                <Coffee className="h-3.5 w-3.5 shrink-0 text-amber-400" />
               </span>
             )}
             {reservation!.wineMenu && (
