@@ -460,6 +460,24 @@ export default function TablePlan() {
   const handleAddReservation = useCallback((reservation: Reservation) => {
     if (!assignments || !addDialogTable) return;
 
+    // Reception-only: intercept and send as change request
+    if (isReceptionOnly && user) {
+      const isBuff = reservation.reservationType === 'buff';
+      supabase.from('table_plan_changes').insert({
+        plan_date: today,
+        table_id: addDialogTable,
+        change_type: isBuff ? 'add_buff' : 'add_reservation',
+        change_data: reservation as any,
+        requested_by: user.id,
+      } as any).then(({ error }) => {
+        if (!error) {
+          toast({ title: t('changeRequest.sent') || 'Ændring sendt til restaurant' });
+        }
+      });
+      setAddDialogTable(null);
+      return;
+    }
+
     // Large party auto-split: if >8 guests, find N adjacent row-merges
     if (reservation.guestCount > 8) {
       updateAssignments(prev => {
@@ -575,7 +593,7 @@ export default function TablePlan() {
       return { ...prev, singles: newSingles };
     });
     setAddDialogTable(null);
-  }, [assignments, addDialogTable, updateAssignments, markJustAdded]);
+  }, [assignments, addDialogTable, updateAssignments, markJustAdded, isReceptionOnly, user, today, toast, t]);
 
   const handleEditReservation = useCallback((reservation: Reservation) => {
     if (!assignments || !detailDialogTable) return;
