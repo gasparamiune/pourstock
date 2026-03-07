@@ -63,6 +63,20 @@ export default function TablePlan() {
   const [addDialogTable, setAddDialogTable] = useState<string | null>(null);
   const [detailDialogTable, setDetailDialogTable] = useState<string | null>(null);
 
+  // Auto-close main sidebar when a plan is loaded, re-open when going back
+  useEffect(() => {
+    if (assignments) {
+      closeDesktop();
+    } else {
+      openDesktop();
+    }
+  }, [assignments !== null]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-open sidebar on unmount (leaving table plan page)
+  useEffect(() => {
+    return () => { openDesktop(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-save preference
   const autoSaveEnabled = localStorage.getItem('pourstock-autosave-tableplan') !== 'false';
 
