@@ -236,8 +236,8 @@ export function TableCard({
         </div>
       ) : (
         <div className="flex flex-col gap-1 flex-1">
-          {/* Icon bar — permanent dark strip */}
-          <div className="flex items-center justify-center gap-2 bg-black/30 rounded px-1.5 py-0.5 -mx-0.5">
+          {/* Icon bar — permanent dark strip, edge-to-edge with rounded corners */}
+          <div className="flex items-center justify-center gap-2 bg-black/30 rounded-lg px-1.5 py-0.5 -mx-2.5">
             {iconItems.map((item, idx) => (
               <span
                 key={idx}
@@ -249,7 +249,7 @@ export function TableCard({
               >
                 {item.flagComponent ? (
                   <span className={cn("transition-opacity", !item.active && "opacity-20 grayscale")}>
-                    <DanishFlag size={18} />
+                    <DanishFlag size={18} className="rounded-[2px]" />
                   </span>
                 ) : item.icon ? (
                   <item.icon className="h-[18px] w-[18px]" />
