@@ -42,6 +42,7 @@ export default function TablePlan() {
   const [assignments, setAssignments] = useState<Assignments | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [planName, setPlanName] = useState('');
   const [savedPlans, setSavedPlans] = useState<any[]>([]);
   const [undoMap, setUndoMap] = useState<Map<string, Reservation>>(new Map());
   const [justAddedTables, setJustAddedTables] = useState<Set<string>>(new Set());
